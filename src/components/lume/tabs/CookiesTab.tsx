@@ -3,7 +3,7 @@ import { Cookie, Lock, Unlock, Clock, Globe } from "lucide-react";
 import { DataTable } from "../DataTable";
 import { CookieEntry, BrowserProfile } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
-import { ProfileSelector } from "../ProfileSelector";
+import { ProfileGrid } from "../ProfileGrid";
 
 interface CookiesTabProps {
   cookies: CookieEntry[];
@@ -15,7 +15,11 @@ export const CookiesTab = ({ cookies, profiles }: CookiesTabProps) => {
 
   const filteredCookies = selectedProfile
     ? cookies.filter((c) => `${c.browser}|${c.profile}` === selectedProfile)
-    : cookies;
+    : [];
+
+  const getDataCount = (browser: string, profile: string) => {
+    return cookies.filter((c) => c.browser === browser && c.profile === profile).length;
+  };
 
   const columns = [
     {
@@ -44,15 +48,6 @@ export const CookiesTab = ({ cookies, profiles }: CookiesTabProps) => {
             {item.value.substring(0, 40)}...
           </span>
         </div>
-      ),
-    },
-    {
-      key: "browser",
-      label: "Profile",
-      render: (item: CookieEntry) => (
-        <Badge variant="outline" className="font-mono text-xs">
-          {item.browser} / {item.profile}
-        </Badge>
       ),
     },
     {
@@ -93,39 +88,38 @@ export const CookiesTab = ({ cookies, profiles }: CookiesTabProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Cookie className="w-6 h-6 text-primary" />
-            Browser Cookies
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            {filteredCookies.length} cookies from {uniqueHosts} domains
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ProfileSelector
-            profiles={profiles}
-            selectedProfile={selectedProfile}
-            onSelectProfile={setSelectedProfile}
-          />
-          <Badge variant="secondary" className="text-sm">
-            <Lock className="w-3 h-3 mr-1" />
-            {secureCookies} Secure
-          </Badge>
-          <Badge variant="secondary" className="text-sm">
-            <Unlock className="w-3 h-3 mr-1" />
-            {filteredCookies.length - secureCookies} Plain
-          </Badge>
-        </div>
-      </div>
-
-      <DataTable
-        data={filteredCookies}
-        columns={columns}
-        searchKeys={["host", "name", "value"] as (keyof CookieEntry)[]}
-        pageSize={10}
+      <ProfileGrid
+        profiles={profiles}
+        selectedProfile={selectedProfile}
+        onSelectProfile={setSelectedProfile}
+        title="Browser Cookies"
+        icon={<Cookie className="w-6 h-6 text-primary" />}
+        dataCount={getDataCount}
       />
+
+      {selectedProfile && (
+        <>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">
+              {filteredCookies.length} cookies from {uniqueHosts} domains
+            </p>
+            <Badge variant="secondary" className="text-sm">
+              <Lock className="w-3 h-3 mr-1" />
+              {secureCookies} Secure
+            </Badge>
+            <Badge variant="secondary" className="text-sm">
+              <Unlock className="w-3 h-3 mr-1" />
+              {filteredCookies.length - secureCookies} Plain
+            </Badge>
+          </div>
+          <DataTable
+            data={filteredCookies}
+            columns={columns}
+            searchKeys={["host", "name", "value"] as (keyof CookieEntry)[]}
+            pageSize={10}
+          />
+        </>
+      )}
     </div>
   );
 };

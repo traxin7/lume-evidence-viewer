@@ -3,7 +3,7 @@ import { Bookmark, Folder, ExternalLink, ChevronRight, ChevronDown } from "lucid
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookmarkEntry, BrowserProfile } from "@/lib/mockData";
-import { ProfileSelector } from "../ProfileSelector";
+import { ProfileGrid } from "../ProfileGrid";
 
 interface BookmarksTabProps {
   bookmarks: BookmarkEntry[];
@@ -69,10 +69,9 @@ export const BookmarksTab = ({ bookmarks, profiles }: BookmarksTabProps) => {
         if (b.browser && b.profile) {
           return `${b.browser}|${b.profile}` === selectedProfile;
         }
-        // Include folder items that might contain matching children
         return true;
       })
-    : bookmarks;
+    : [];
 
   const countBookmarks = (items: BookmarkEntry[]): number => {
     return items.reduce((acc, item) => {
@@ -82,39 +81,41 @@ export const BookmarksTab = ({ bookmarks, profiles }: BookmarksTabProps) => {
     }, 0);
   };
 
+  const getDataCount = (browser: string, profile: string) => {
+    const filtered = bookmarks.filter((b) => b.browser === browser && b.profile === profile);
+    return countBookmarks(filtered);
+  };
+
   const totalBookmarks = countBookmarks(filteredBookmarks);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Bookmark className="w-6 h-6 text-primary" />
-            Bookmarks
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            {totalBookmarks} bookmarks recovered
-          </p>
-        </div>
-        <ProfileSelector
-          profiles={profiles}
-          selectedProfile={selectedProfile}
-          onSelectProfile={setSelectedProfile}
-        />
-      </div>
+      <ProfileGrid
+        profiles={profiles}
+        selectedProfile={selectedProfile}
+        onSelectProfile={setSelectedProfile}
+        title="Bookmarks"
+        icon={<Bookmark className="w-6 h-6 text-primary" />}
+        dataCount={getDataCount}
+      />
 
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-muted-foreground">Bookmark Tree</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-0.5">
-            {filteredBookmarks.map((item, index) => (
-              <BookmarkItem key={index} item={item} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {selectedProfile && (
+        <>
+          <p className="text-muted-foreground">{totalBookmarks} bookmarks recovered</p>
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-muted-foreground">Bookmark Tree</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-0.5">
+                {filteredBookmarks.map((item, index) => (
+                  <BookmarkItem key={index} item={item} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 };
