@@ -12,44 +12,85 @@ import { AutofillTab } from "@/components/lume/tabs/AutofillTab";
 import { ExtensionsTab } from "@/components/lume/tabs/ExtensionsTab";
 import { FileBrowserTab } from "@/components/lume/tabs/FileBrowserTab";
 import { CustodyChain } from "@/components/lume/CustodyChain";
-import {
-  mockProfiles,
-  mockHistory,
-  mockBookmarks,
-  mockDownloads,
-  mockCookies,
-  mockPasswords,
-  mockAutofill,
-  mockExtensions,
-  mockFileTree,
-  mockCustodyChain,
-} from "@/lib/mockData";
+import { useAnalysisData } from "@/hooks/useAnalysisData";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const {
+    caseInfo,
+    verification,
+    custodyChain,
+    profiles,
+    history,
+    downloads,
+    cookies,
+    passwords,
+    autofill,
+    extensions,
+    bookmarks,
+    fileTree,
+    loading,
+    error,
+  } = useAnalysisData();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading analysis data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive font-medium">{error}</p>
+          <p className="text-muted-foreground mt-2">
+            Make sure the analyzed data is present in /public/analyzed
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />;
+        return (
+          <Dashboard
+            caseInfo={caseInfo}
+            verification={verification}
+            custodyChain={custodyChain}
+            profiles={profiles}
+            history={history}
+            downloads={downloads}
+            cookies={cookies}
+            passwords={passwords}
+          />
+        );
       case "profiles":
-        return <ProfilesTab profiles={mockProfiles} />;
+        return <ProfilesTab profiles={profiles} />;
       case "history":
-        return <HistoryTab history={mockHistory} />;
+        return <HistoryTab history={history} />;
       case "bookmarks":
-        return <BookmarksTab bookmarks={mockBookmarks} />;
+        return <BookmarksTab bookmarks={bookmarks} />;
       case "downloads":
-        return <DownloadsTab downloads={mockDownloads} />;
+        return <DownloadsTab downloads={downloads} />;
       case "cookies":
-        return <CookiesTab cookies={mockCookies} />;
+        return <CookiesTab cookies={cookies} />;
       case "passwords":
-        return <PasswordsTab passwords={mockPasswords} />;
+        return <PasswordsTab passwords={passwords} />;
       case "autofill":
-        return <AutofillTab autofill={mockAutofill} />;
+        return <AutofillTab autofill={autofill} />;
       case "extensions":
-        return <ExtensionsTab extensions={mockExtensions} />;
+        return <ExtensionsTab extensions={extensions} />;
       case "files":
-        return <FileBrowserTab fileTree={mockFileTree} />;
+        return <FileBrowserTab fileTree={fileTree} />;
       case "custody":
         return (
           <div className="space-y-6">
@@ -59,11 +100,22 @@ const Index = () => {
                 Complete audit trail of evidence access and modifications
               </p>
             </div>
-            <CustodyChain entries={mockCustodyChain} />
+            <CustodyChain entries={custodyChain} />
           </div>
         );
       default:
-        return <Dashboard />;
+        return (
+          <Dashboard
+            caseInfo={caseInfo}
+            verification={verification}
+            custodyChain={custodyChain}
+            profiles={profiles}
+            history={history}
+            downloads={downloads}
+            cookies={cookies}
+            passwords={passwords}
+          />
+        );
     }
   };
 
