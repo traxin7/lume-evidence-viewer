@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Download, CheckCircle, Clock, File, HardDrive } from "lucide-react";
 import { DataTable } from "../DataTable";
-import { DownloadEntry } from "@/lib/mockData";
+import { DownloadEntry, BrowserProfile } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
+import { ProfileSelector } from "../ProfileSelector";
 
 interface DownloadsTabProps {
   downloads: DownloadEntry[];
+  profiles: BrowserProfile[];
 }
 
 const formatBytes = (bytes: number) => {
@@ -24,7 +27,13 @@ const getFileName = (path: string) => {
   return path.split("\\").pop() || path;
 };
 
-export const DownloadsTab = ({ downloads }: DownloadsTabProps) => {
+export const DownloadsTab = ({ downloads, profiles }: DownloadsTabProps) => {
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  const filteredDownloads = selectedProfile
+    ? downloads.filter((d) => `${d.browser}|${d.profile}` === selectedProfile)
+    : downloads;
+
   const columns = [
     {
       key: "targetPath",
@@ -41,6 +50,15 @@ export const DownloadsTab = ({ downloads }: DownloadsTabProps) => {
             {item.targetPath}
           </p>
         </div>
+      ),
+    },
+    {
+      key: "browser",
+      label: "Profile",
+      render: (item: DownloadEntry) => (
+        <Badge variant="outline" className="font-mono text-xs">
+          {item.browser} / {item.profile}
+        </Badge>
       ),
     },
     {
@@ -81,7 +99,7 @@ export const DownloadsTab = ({ downloads }: DownloadsTabProps) => {
     },
   ];
 
-  const totalSize = downloads.reduce((acc, d) => acc + d.totalBytes, 0);
+  const totalSize = filteredDownloads.reduce((acc, d) => acc + d.totalBytes, 0);
 
   return (
     <div className="space-y-6">
@@ -92,16 +110,23 @@ export const DownloadsTab = ({ downloads }: DownloadsTabProps) => {
             Download History
           </h2>
           <p className="text-muted-foreground mt-1">
-            {downloads.length} downloads recorded
+            {filteredDownloads.length} downloads recorded
           </p>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          Total: {formatBytes(totalSize)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ProfileSelector
+            profiles={profiles}
+            selectedProfile={selectedProfile}
+            onSelectProfile={setSelectedProfile}
+          />
+          <Badge variant="secondary" className="text-sm">
+            Total: {formatBytes(totalSize)}
+          </Badge>
+        </div>
       </div>
 
       <DataTable
-        data={downloads}
+        data={filteredDownloads}
         columns={columns}
         searchKeys={["targetPath", "url"] as (keyof DownloadEntry)[]}
         pageSize={10}

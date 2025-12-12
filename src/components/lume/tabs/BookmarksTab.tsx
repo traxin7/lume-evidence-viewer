@@ -1,11 +1,13 @@
-import { Bookmark, Folder, ExternalLink, ChevronRight, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { Bookmark, Folder, ExternalLink, ChevronRight, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookmarkEntry } from "@/lib/mockData";
+import { BookmarkEntry, BrowserProfile } from "@/lib/mockData";
+import { ProfileSelector } from "../ProfileSelector";
 
 interface BookmarksTabProps {
   bookmarks: BookmarkEntry[];
+  profiles: BrowserProfile[];
 }
 
 const BookmarkItem = ({ item, depth = 0 }: { item: BookmarkEntry; depth?: number }) => {
@@ -58,7 +60,20 @@ const BookmarkItem = ({ item, depth = 0 }: { item: BookmarkEntry; depth?: number
   );
 };
 
-export const BookmarksTab = ({ bookmarks }: BookmarksTabProps) => {
+export const BookmarksTab = ({ bookmarks, profiles }: BookmarksTabProps) => {
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  // Filter bookmarks by profile if selected
+  const filteredBookmarks = selectedProfile
+    ? bookmarks.filter((b) => {
+        if (b.browser && b.profile) {
+          return `${b.browser}|${b.profile}` === selectedProfile;
+        }
+        // Include folder items that might contain matching children
+        return true;
+      })
+    : bookmarks;
+
   const countBookmarks = (items: BookmarkEntry[]): number => {
     return items.reduce((acc, item) => {
       if (item.type === "url") return acc + 1;
@@ -67,7 +82,7 @@ export const BookmarksTab = ({ bookmarks }: BookmarksTabProps) => {
     }, 0);
   };
 
-  const totalBookmarks = countBookmarks(bookmarks);
+  const totalBookmarks = countBookmarks(filteredBookmarks);
 
   return (
     <div className="space-y-6">
@@ -81,6 +96,11 @@ export const BookmarksTab = ({ bookmarks }: BookmarksTabProps) => {
             {totalBookmarks} bookmarks recovered
           </p>
         </div>
+        <ProfileSelector
+          profiles={profiles}
+          selectedProfile={selectedProfile}
+          onSelectProfile={setSelectedProfile}
+        />
       </div>
 
       <Card className="bg-card border-border">
@@ -89,7 +109,7 @@ export const BookmarksTab = ({ bookmarks }: BookmarksTabProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-0.5">
-            {bookmarks.map((item, index) => (
+            {filteredBookmarks.map((item, index) => (
               <BookmarkItem key={index} item={item} />
             ))}
           </div>

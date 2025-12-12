@@ -1,13 +1,22 @@
+import { useState } from "react";
 import { FormInput, Clock, Tag } from "lucide-react";
 import { DataTable } from "../DataTable";
-import { AutofillEntry } from "@/lib/mockData";
+import { AutofillEntry, BrowserProfile } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
+import { ProfileSelector } from "../ProfileSelector";
 
 interface AutofillTabProps {
   autofill: AutofillEntry[];
+  profiles: BrowserProfile[];
 }
 
-export const AutofillTab = ({ autofill }: AutofillTabProps) => {
+export const AutofillTab = ({ autofill, profiles }: AutofillTabProps) => {
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  const filteredAutofill = selectedProfile
+    ? autofill.filter((a) => `${a.browser}|${a.profile}` === selectedProfile)
+    : autofill;
+
   const columns = [
     {
       key: "name",
@@ -29,6 +38,15 @@ export const AutofillTab = ({ autofill }: AutofillTabProps) => {
       ),
     },
     {
+      key: "browser",
+      label: "Browser",
+      render: (item: AutofillEntry) => (
+        <Badge variant="outline" className="font-mono text-xs">
+          {item.browser} / {item.profile}
+        </Badge>
+      ),
+    },
+    {
       key: "usedAt",
       label: "Last Used",
       className: "whitespace-nowrap",
@@ -41,8 +59,8 @@ export const AutofillTab = ({ autofill }: AutofillTabProps) => {
     },
   ];
 
-  const emailEntries = autofill.filter((a) => a.name.toLowerCase().includes("email"));
-  const uniqueFields = new Set(autofill.map((a) => a.name)).size;
+  const emailEntries = filteredAutofill.filter((a) => a.name.toLowerCase().includes("email"));
+  const uniqueFields = new Set(filteredAutofill.map((a) => a.name)).size;
 
   return (
     <div className="space-y-6">
@@ -53,16 +71,23 @@ export const AutofillTab = ({ autofill }: AutofillTabProps) => {
             Autofill Data
           </h2>
           <p className="text-muted-foreground mt-1">
-            {autofill.length} form entries across {uniqueFields} fields
+            {filteredAutofill.length} form entries across {uniqueFields} fields
           </p>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          {emailEntries.length} Email Entries
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ProfileSelector
+            profiles={profiles}
+            selectedProfile={selectedProfile}
+            onSelectProfile={setSelectedProfile}
+          />
+          <Badge variant="secondary" className="text-sm">
+            {emailEntries.length} Email Entries
+          </Badge>
+        </div>
       </div>
 
       <DataTable
-        data={autofill}
+        data={filteredAutofill}
         columns={columns}
         searchKeys={["name", "value"] as (keyof AutofillEntry)[]}
         pageSize={15}

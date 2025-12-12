@@ -1,13 +1,22 @@
+import { useState } from "react";
 import { Cookie, Lock, Unlock, Clock, Globe } from "lucide-react";
 import { DataTable } from "../DataTable";
-import { CookieEntry } from "@/lib/mockData";
+import { CookieEntry, BrowserProfile } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
+import { ProfileSelector } from "../ProfileSelector";
 
 interface CookiesTabProps {
   cookies: CookieEntry[];
+  profiles: BrowserProfile[];
 }
 
-export const CookiesTab = ({ cookies }: CookiesTabProps) => {
+export const CookiesTab = ({ cookies, profiles }: CookiesTabProps) => {
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  const filteredCookies = selectedProfile
+    ? cookies.filter((c) => `${c.browser}|${c.profile}` === selectedProfile)
+    : cookies;
+
   const columns = [
     {
       key: "host",
@@ -35,6 +44,15 @@ export const CookiesTab = ({ cookies }: CookiesTabProps) => {
             {item.value.substring(0, 40)}...
           </span>
         </div>
+      ),
+    },
+    {
+      key: "browser",
+      label: "Profile",
+      render: (item: CookieEntry) => (
+        <Badge variant="outline" className="font-mono text-xs">
+          {item.browser} / {item.profile}
+        </Badge>
       ),
     },
     {
@@ -70,8 +88,8 @@ export const CookiesTab = ({ cookies }: CookiesTabProps) => {
     },
   ];
 
-  const secureCookies = cookies.filter((c) => c.isSecure).length;
-  const uniqueHosts = new Set(cookies.map((c) => c.host)).size;
+  const secureCookies = filteredCookies.filter((c) => c.isSecure).length;
+  const uniqueHosts = new Set(filteredCookies.map((c) => c.host)).size;
 
   return (
     <div className="space-y-6">
@@ -82,23 +100,28 @@ export const CookiesTab = ({ cookies }: CookiesTabProps) => {
             Browser Cookies
           </h2>
           <p className="text-muted-foreground mt-1">
-            {cookies.length} cookies from {uniqueHosts} domains
+            {filteredCookies.length} cookies from {uniqueHosts} domains
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ProfileSelector
+            profiles={profiles}
+            selectedProfile={selectedProfile}
+            onSelectProfile={setSelectedProfile}
+          />
           <Badge variant="secondary" className="text-sm">
             <Lock className="w-3 h-3 mr-1" />
             {secureCookies} Secure
           </Badge>
           <Badge variant="secondary" className="text-sm">
             <Unlock className="w-3 h-3 mr-1" />
-            {cookies.length - secureCookies} Plain
+            {filteredCookies.length - secureCookies} Plain
           </Badge>
         </div>
       </div>
 
       <DataTable
-        data={cookies}
+        data={filteredCookies}
         columns={columns}
         searchKeys={["host", "name", "value"] as (keyof CookieEntry)[]}
         pageSize={10}

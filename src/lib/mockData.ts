@@ -40,6 +40,8 @@ export interface HistoryEntry {
   url: string;
   lastVisitTime: string;
   visitCount: number;
+  browser: string;
+  profile: string;
 }
 
 export interface BookmarkEntry {
@@ -48,6 +50,8 @@ export interface BookmarkEntry {
   type: string;
   dateAdded: string;
   children?: BookmarkEntry[];
+  browser?: string;
+  profile?: string;
 }
 
 export interface DownloadEntry {
@@ -57,6 +61,8 @@ export interface DownloadEntry {
   receivedBytes: number;
   totalBytes: number;
   state: number;
+  browser: string;
+  profile: string;
 }
 
 export interface CookieEntry {
@@ -69,18 +75,24 @@ export interface CookieEntry {
   lastAccessDate: string;
   isSecure: boolean;
   isHttpOnly: boolean;
+  browser: string;
+  profile: string;
 }
 
 export interface PasswordEntry {
   url: string;
   username: string;
   password: string;
+  browser: string;
+  profile: string;
 }
 
 export interface AutofillEntry {
   name: string;
   value: string;
   usedAt: string;
+  browser: string;
+  profile: string;
 }
 
 export interface ExtensionEntry {
