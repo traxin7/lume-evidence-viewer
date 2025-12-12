@@ -3,7 +3,7 @@ import { Download, CheckCircle, Clock, File, HardDrive } from "lucide-react";
 import { DataTable } from "../DataTable";
 import { DownloadEntry, BrowserProfile } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
-import { ProfileSelector } from "../ProfileSelector";
+import { ProfileGrid } from "../ProfileGrid";
 
 interface DownloadsTabProps {
   downloads: DownloadEntry[];
@@ -32,7 +32,11 @@ export const DownloadsTab = ({ downloads, profiles }: DownloadsTabProps) => {
 
   const filteredDownloads = selectedProfile
     ? downloads.filter((d) => `${d.browser}|${d.profile}` === selectedProfile)
-    : downloads;
+    : [];
+
+  const getDataCount = (browser: string, profile: string) => {
+    return downloads.filter((d) => d.browser === browser && d.profile === profile).length;
+  };
 
   const columns = [
     {
@@ -50,15 +54,6 @@ export const DownloadsTab = ({ downloads, profiles }: DownloadsTabProps) => {
             {item.targetPath}
           </p>
         </div>
-      ),
-    },
-    {
-      key: "browser",
-      label: "Profile",
-      render: (item: DownloadEntry) => (
-        <Badge variant="outline" className="font-mono text-xs">
-          {item.browser} / {item.profile}
-        </Badge>
       ),
     },
     {
@@ -103,34 +98,31 @@ export const DownloadsTab = ({ downloads, profiles }: DownloadsTabProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Download className="w-6 h-6 text-primary" />
-            Download History
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            {filteredDownloads.length} downloads recorded
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ProfileSelector
-            profiles={profiles}
-            selectedProfile={selectedProfile}
-            onSelectProfile={setSelectedProfile}
-          />
-          <Badge variant="secondary" className="text-sm">
-            Total: {formatBytes(totalSize)}
-          </Badge>
-        </div>
-      </div>
-
-      <DataTable
-        data={filteredDownloads}
-        columns={columns}
-        searchKeys={["targetPath", "url"] as (keyof DownloadEntry)[]}
-        pageSize={10}
+      <ProfileGrid
+        profiles={profiles}
+        selectedProfile={selectedProfile}
+        onSelectProfile={setSelectedProfile}
+        title="Download History"
+        icon={<Download className="w-6 h-6 text-primary" />}
+        dataCount={getDataCount}
       />
+
+      {selectedProfile && (
+        <>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">{filteredDownloads.length} downloads</p>
+            <Badge variant="secondary" className="text-sm">
+              Total: {formatBytes(totalSize)}
+            </Badge>
+          </div>
+          <DataTable
+            data={filteredDownloads}
+            columns={columns}
+            searchKeys={["targetPath", "url"] as (keyof DownloadEntry)[]}
+            pageSize={10}
+          />
+        </>
+      )}
     </div>
   );
 };
