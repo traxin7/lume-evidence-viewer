@@ -1,13 +1,22 @@
+import { useState } from "react";
 import { History, ExternalLink, Eye } from "lucide-react";
 import { DataTable } from "../DataTable";
-import { HistoryEntry } from "@/lib/mockData";
+import { HistoryEntry, BrowserProfile } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
+import { ProfileSelector } from "../ProfileSelector";
 
 interface HistoryTabProps {
   history: HistoryEntry[];
+  profiles: BrowserProfile[];
 }
 
-export const HistoryTab = ({ history }: HistoryTabProps) => {
+export const HistoryTab = ({ history, profiles }: HistoryTabProps) => {
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  const filteredHistory = selectedProfile
+    ? history.filter((h) => `${h.browser}|${h.profile}` === selectedProfile)
+    : history;
+
   const columns = [
     {
       key: "title",
@@ -25,6 +34,15 @@ export const HistoryTab = ({ history }: HistoryTabProps) => {
             {item.url.substring(0, 60)}...
           </a>
         </div>
+      ),
+    },
+    {
+      key: "browser",
+      label: "Profile",
+      render: (item: HistoryEntry) => (
+        <Badge variant="outline" className="font-mono text-xs">
+          {item.browser} / {item.profile}
+        </Badge>
       ),
     },
     {
@@ -52,18 +70,25 @@ export const HistoryTab = ({ history }: HistoryTabProps) => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <History className="w-6 h-6 text-primary" />
-          Browsing History
-        </h2>
-        <p className="text-muted-foreground mt-1">
-          {history.length} entries found across all browsers
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <History className="w-6 h-6 text-primary" />
+            Browsing History
+          </h2>
+          <p className="text-muted-foreground mt-1">
+            {filteredHistory.length} entries found
+          </p>
+        </div>
+        <ProfileSelector
+          profiles={profiles}
+          selectedProfile={selectedProfile}
+          onSelectProfile={setSelectedProfile}
+        />
       </div>
 
       <DataTable
-        data={history}
+        data={filteredHistory}
         columns={columns}
         searchKeys={["title", "url"] as (keyof HistoryEntry)[]}
         pageSize={15}

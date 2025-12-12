@@ -132,23 +132,46 @@ function getActionDetails(action: string, hashValid: boolean): string {
   }
 }
 
-// Load browser profiles from chromium_profiles.json
+// Load browser profiles from chromium_profiles.json and firefox data
 export async function loadProfiles(): Promise<BrowserProfile[]> {
-  const profiles = await fetchJson<Array<{
-    browser: string;
-    profile_dir: string;
-    display_name: string;
-    email: string;
-  }>>("/results/chromium/chromium_profiles.json");
+  const [chromiumProfiles, firefoxAutofill] = await Promise.all([
+    fetchJson<Array<{
+      browser: string;
+      profile_dir: string;
+      display_name: string;
+      email: string;
+    }>>("/results/chromium/chromium_profiles.json"),
+    // Use firefox_autofill to detect Firefox profiles since it has profile names
+    fetchJson<Record<string, any>>("/results/firefox/firefox_autofill.json"),
+  ]);
 
-  if (!profiles) return [];
+  const profiles: BrowserProfile[] = [];
 
-  return profiles.map((p) => ({
-    browser: p.browser,
-    profileDir: p.profile_dir,
-    displayName: p.display_name,
-    email: p.email,
-  }));
+  // Add chromium profiles
+  if (chromiumProfiles) {
+    for (const p of chromiumProfiles) {
+      profiles.push({
+        browser: p.browser,
+        profileDir: p.profile_dir,
+        displayName: p.display_name,
+        email: p.email,
+      });
+    }
+  }
+
+  // Add Firefox profiles based on keys in firefox data files
+  if (firefoxAutofill) {
+    for (const profileName of Object.keys(firefoxAutofill)) {
+      profiles.push({
+        browser: "Firefox",
+        profileDir: profileName,
+        displayName: profileName.split(".").pop() || profileName,
+        email: "",
+      });
+    }
+  }
+
+  return profiles;
 }
 
 // Load history from chromium and firefox
@@ -172,8 +195,8 @@ export async function loadHistory(): Promise<HistoryEntry[]> {
 
   // Process chromium history
   if (chromiumHistory) {
-    for (const browser of Object.values(chromiumHistory)) {
-      for (const profile of Object.values(browser)) {
+    for (const [browserName, browser] of Object.entries(chromiumHistory)) {
+      for (const [profileName, profile] of Object.entries(browser)) {
         if (Array.isArray(profile)) {
           for (const entry of profile) {
             entries.push({
@@ -181,6 +204,8 @@ export async function loadHistory(): Promise<HistoryEntry[]> {
               url: entry.url,
               lastVisitTime: entry.last_visit_time,
               visitCount: entry.visit_count,
+              browser: browserName,
+              profile: profileName,
             });
           }
         }
@@ -190,7 +215,7 @@ export async function loadHistory(): Promise<HistoryEntry[]> {
 
   // Process firefox history
   if (firefoxHistory) {
-    for (const profile of Object.values(firefoxHistory)) {
+    for (const [profileName, profile] of Object.entries(firefoxHistory)) {
       if (Array.isArray(profile)) {
         for (const entry of profile) {
           entries.push({
@@ -198,6 +223,8 @@ export async function loadHistory(): Promise<HistoryEntry[]> {
             url: entry.url,
             lastVisitTime: entry.visit_time,
             visitCount: entry.visit_count,
+            browser: "Firefox",
+            profile: profileName,
           });
         }
       }
@@ -231,8 +258,8 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
 
   // Process chromium downloads
   if (chromiumDownloads) {
-    for (const browser of Object.values(chromiumDownloads)) {
-      for (const profile of Object.values(browser)) {
+    for (const [browserName, browser] of Object.entries(chromiumDownloads)) {
+      for (const [profileName, profile] of Object.entries(browser)) {
         if (Array.isArray(profile)) {
           for (const entry of profile) {
             entries.push({
@@ -242,6 +269,8 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
               receivedBytes: entry.received_bytes,
               totalBytes: entry.total_bytes,
               state: entry.state,
+              browser: browserName,
+              profile: profileName,
             });
           }
         }
@@ -251,7 +280,7 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
 
   // Process firefox downloads
   if (firefoxDownloads) {
-    for (const profile of Object.values(firefoxDownloads)) {
+    for (const [profileName, profile] of Object.entries(firefoxDownloads)) {
       if (Array.isArray(profile)) {
         for (const entry of profile) {
           entries.push({
@@ -261,6 +290,8 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
             receivedBytes: 0,
             totalBytes: 0,
             state: entry.state === "completed" ? 1 : 0,
+            browser: "Firefox",
+            profile: profileName,
           });
         }
       }
@@ -274,12 +305,12 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
 export async function loadCookies(): Promise<CookieEntry[]> {
   const entries: CookieEntry[] = [];
 
-  // Load chromium cookies from each profile
-  const chromiumPaths = [
-    "/results/chromium/chrome/Default/cookies.json",
-    "/results/chromium/chrome/Profile 1/cookies.json",
-    "/results/chromium/chrome/Profile 2/cookies.json",
-    "/results/chromium/edge/Default/cookies.json",
+  // Define chromium cookie paths with browser/profile info
+  const chromiumPathsInfo = [
+    { path: "/results/chromium/chrome/Default/cookies.json", browser: "Chrome", profile: "Default" },
+    { path: "/results/chromium/chrome/Profile 1/cookies.json", browser: "Chrome", profile: "Profile 1" },
+    { path: "/results/chromium/chrome/Profile 2/cookies.json", browser: "Chrome", profile: "Profile 2" },
+    { path: "/results/chromium/edge/Default/cookies.json", browser: "Edge", profile: "Default" },
   ];
 
   const firefoxCookies = await fetchJson<Record<string, Array<{
@@ -294,7 +325,7 @@ export async function loadCookies(): Promise<CookieEntry[]> {
   }>>>("/results/firefox/firefox_cookies.json");
 
   // Load chromium cookies
-  for (const path of chromiumPaths) {
+  for (const pathInfo of chromiumPathsInfo) {
     const data = await fetchJson<{
       cookies_by_host: Record<string, Array<{
         host: string;
@@ -307,7 +338,7 @@ export async function loadCookies(): Promise<CookieEntry[]> {
         is_secure: boolean;
         is_httponly: boolean;
       }>>;
-    }>(path);
+    }>(pathInfo.path);
 
     if (data?.cookies_by_host) {
       for (const cookies of Object.values(data.cookies_by_host)) {
@@ -322,6 +353,8 @@ export async function loadCookies(): Promise<CookieEntry[]> {
             lastAccessDate: cookie.last_access_date,
             isSecure: cookie.is_secure,
             isHttpOnly: cookie.is_httponly,
+            browser: pathInfo.browser,
+            profile: pathInfo.profile,
           });
         }
       }
@@ -330,7 +363,7 @@ export async function loadCookies(): Promise<CookieEntry[]> {
 
   // Load firefox cookies
   if (firefoxCookies) {
-    for (const profile of Object.values(firefoxCookies)) {
+    for (const [profileName, profile] of Object.entries(firefoxCookies)) {
       if (Array.isArray(profile)) {
         for (const cookie of profile) {
           entries.push({
@@ -343,6 +376,8 @@ export async function loadCookies(): Promise<CookieEntry[]> {
             lastAccessDate: cookie.last_access,
             isSecure: cookie.is_secure || false,
             isHttpOnly: false,
+            browser: "Firefox",
+            profile: profileName,
           });
         }
       }
@@ -356,22 +391,22 @@ export async function loadCookies(): Promise<CookieEntry[]> {
 export async function loadPasswords(): Promise<PasswordEntry[]> {
   const entries: PasswordEntry[] = [];
 
-  // Load chromium passwords from each profile
-  const chromiumPaths = [
-    "/results/chromium/chrome/Default/passwords.json",
-    "/results/chromium/chrome/Profile 1/passwords.json",
-    "/results/chromium/chrome/Profile 2/passwords.json",
-    "/results/chromium/chrome/Profile 4/passwords.json",
-    "/results/chromium/chrome/Profile 5/passwords.json",
-    "/results/chromium/edge/Default/passwords.json",
+  // Define chromium password paths with browser/profile info
+  const chromiumPathsInfo = [
+    { path: "/results/chromium/chrome/Default/passwords.json", browser: "Chrome", profile: "Default" },
+    { path: "/results/chromium/chrome/Profile 1/passwords.json", browser: "Chrome", profile: "Profile 1" },
+    { path: "/results/chromium/chrome/Profile 2/passwords.json", browser: "Chrome", profile: "Profile 2" },
+    { path: "/results/chromium/chrome/Profile 4/passwords.json", browser: "Chrome", profile: "Profile 4" },
+    { path: "/results/chromium/chrome/Profile 5/passwords.json", browser: "Chrome", profile: "Profile 5" },
+    { path: "/results/chromium/edge/Default/passwords.json", browser: "Edge", profile: "Default" },
   ];
 
-  for (const path of chromiumPaths) {
+  for (const pathInfo of chromiumPathsInfo) {
     const data = await fetchJson<Array<{
       url: string;
       username: string;
       password: string;
-    }>>(path);
+    }>>(pathInfo.path);
 
     if (data && Array.isArray(data)) {
       for (const entry of data) {
@@ -379,25 +414,33 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
           url: entry.url,
           username: entry.username,
           password: entry.password,
+          browser: pathInfo.browser,
+          profile: pathInfo.profile,
         });
       }
     }
   }
 
   // Load firefox passwords
-  const firefoxPasswords = await fetchJson<Array<{
+  const firefoxPasswords = await fetchJson<Record<string, Array<{
     url: string;
     user: string;
     password: string;
-  }>>("/results/firefox/firefox_passwords.json");
+  }>>>("/results/firefox/firefox_passwords.json");
 
-  if (firefoxPasswords && Array.isArray(firefoxPasswords)) {
-    for (const entry of firefoxPasswords) {
-      entries.push({
-        url: entry.url,
-        username: entry.user,
-        password: entry.password,
-      });
+  if (firefoxPasswords) {
+    for (const [profileName, profile] of Object.entries(firefoxPasswords)) {
+      if (Array.isArray(profile)) {
+        for (const entry of profile) {
+          entries.push({
+            url: entry.url,
+            username: entry.user,
+            password: entry.password,
+            browser: "Firefox",
+            profile: profileName,
+          });
+        }
+      }
     }
   }
 
@@ -423,14 +466,16 @@ export async function loadAutofill(): Promise<AutofillEntry[]> {
 
   // Process chromium autofill
   if (chromiumAutofill) {
-    for (const browser of Object.values(chromiumAutofill)) {
-      for (const profile of Object.values(browser)) {
+    for (const [browserName, browser] of Object.entries(chromiumAutofill)) {
+      for (const [profileName, profile] of Object.entries(browser)) {
         if (Array.isArray(profile)) {
           for (const entry of profile) {
             entries.push({
               name: entry.name,
               value: entry.value,
               usedAt: entry.used_at,
+              browser: browserName,
+              profile: profileName,
             });
           }
         }
@@ -440,13 +485,15 @@ export async function loadAutofill(): Promise<AutofillEntry[]> {
 
   // Process firefox autofill
   if (firefoxAutofill) {
-    for (const profile of Object.values(firefoxAutofill)) {
+    for (const [profileName, profile] of Object.entries(firefoxAutofill)) {
       if (profile?.form_history && Array.isArray(profile.form_history)) {
         for (const entry of profile.form_history) {
           entries.push({
             name: entry.field_name,
             value: entry.value,
             usedAt: entry.last_used,
+            browser: "Firefox",
+            profile: profileName,
           });
         }
       }

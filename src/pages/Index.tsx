@@ -76,17 +76,17 @@ const Index = () => {
       case "profiles":
         return <ProfilesTab profiles={profiles} />;
       case "history":
-        return <HistoryTab history={history} />;
+        return <HistoryTab history={history} profiles={profiles} />;
       case "bookmarks":
-        return <BookmarksTab bookmarks={bookmarks} />;
+        return <BookmarksTab bookmarks={bookmarks} profiles={profiles} />;
       case "downloads":
-        return <DownloadsTab downloads={downloads} />;
+        return <DownloadsTab downloads={downloads} profiles={profiles} />;
       case "cookies":
-        return <CookiesTab cookies={cookies} />;
+        return <CookiesTab cookies={cookies} profiles={profiles} />;
       case "passwords":
-        return <PasswordsTab passwords={passwords} />;
+        return <PasswordsTab passwords={passwords} profiles={profiles} />;
       case "autofill":
-        return <AutofillTab autofill={autofill} />;
+        return <AutofillTab autofill={autofill} profiles={profiles} />;
       case "extensions":
         return <ExtensionsTab extensions={extensions} />;
       case "files":

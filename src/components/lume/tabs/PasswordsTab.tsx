@@ -4,14 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PasswordEntry } from "@/lib/mockData";
+import { PasswordEntry, BrowserProfile } from "@/lib/mockData";
+import { ProfileSelector } from "../ProfileSelector";
 
 interface PasswordsTabProps {
   passwords: PasswordEntry[];
+  profiles: BrowserProfile[];
 }
 
-export const PasswordsTab = ({ passwords }: PasswordsTabProps) => {
+export const PasswordsTab = ({ passwords, profiles }: PasswordsTabProps) => {
   const [showPasswords, setShowPasswords] = useState<Record<number, boolean>>({});
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  const filteredPasswords = selectedProfile
+    ? passwords.filter((p) => `${p.browser}|${p.profile}` === selectedProfile)
+    : passwords;
 
   const togglePassword = (index: number) => {
     setShowPasswords((prev) => ({
@@ -41,13 +48,20 @@ export const PasswordsTab = ({ passwords }: PasswordsTabProps) => {
             Saved Passwords
           </h2>
           <p className="text-muted-foreground mt-1">
-            {passwords.length} credentials recovered
+            {filteredPasswords.length} credentials recovered
           </p>
         </div>
-        <Badge variant="destructive" className="text-sm">
-          <AlertTriangle className="w-3 h-3 mr-1" />
-          Sensitive Data
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ProfileSelector
+            profiles={profiles}
+            selectedProfile={selectedProfile}
+            onSelectProfile={setSelectedProfile}
+          />
+          <Badge variant="destructive" className="text-sm">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Sensitive Data
+          </Badge>
+        </div>
       </div>
 
       <Alert className="border-warning bg-warning/10">
@@ -58,13 +72,16 @@ export const PasswordsTab = ({ passwords }: PasswordsTabProps) => {
       </Alert>
 
       <div className="grid gap-4">
-        {passwords.map((password, index) => (
+        {filteredPasswords.map((password, index) => (
           <Card key={index} className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
                   <Globe className="w-4 h-4 text-muted-foreground" />
                   <span className="font-mono text-primary">{getDomain(password.url)}</span>
+                  <Badge variant="outline" className="font-mono text-xs ml-2">
+                    {password.browser} / {password.profile}
+                  </Badge>
                 </div>
                 <Button
                   variant="ghost"
