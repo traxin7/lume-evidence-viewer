@@ -2,16 +2,16 @@ import { CaseInfoCard } from "./CaseInfoCard";
 import { VerificationCard } from "./VerificationCard";
 import { CustodyChain } from "./CustodyChain";
 import {
-  mockCaseInfo,
-  mockVerification,
-  mockCustodyChain,
-  mockHistory,
-  mockDownloads,
-  mockPasswords,
-  mockCookies,
-  mockProfiles,
+  CaseInfo,
+  VerificationResult,
+  CustodyEntry,
+  BrowserProfile,
+  HistoryEntry,
+  DownloadEntry,
+  PasswordEntry,
+  CookieEntry,
 } from "@/lib/mockData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   History,
   Download,
@@ -23,45 +23,67 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-export const Dashboard = () => {
+interface DashboardProps {
+  caseInfo: CaseInfo | null;
+  verification: VerificationResult | null;
+  custodyChain: CustodyEntry[];
+  profiles: BrowserProfile[];
+  history: HistoryEntry[];
+  downloads: DownloadEntry[];
+  cookies: CookieEntry[];
+  passwords: PasswordEntry[];
+}
+
+export const Dashboard = ({
+  caseInfo,
+  verification,
+  custodyChain,
+  profiles,
+  history,
+  downloads,
+  cookies,
+  passwords,
+}: DashboardProps) => {
   const stats = [
     {
       label: "Browser Profiles",
-      value: mockProfiles.length,
+      value: profiles.length,
       icon: <Users className="w-5 h-5" />,
       color: "text-primary",
     },
     {
       label: "History Entries",
-      value: mockHistory.length,
+      value: history.length,
       icon: <History className="w-5 h-5" />,
       color: "text-chart-1",
     },
     {
       label: "Downloads",
-      value: mockDownloads.length,
+      value: downloads.length,
       icon: <Download className="w-5 h-5" />,
       color: "text-chart-2",
     },
     {
       label: "Saved Passwords",
-      value: mockPasswords.length,
+      value: passwords.length,
       icon: <Key className="w-5 h-5" />,
       color: "text-destructive",
     },
     {
       label: "Cookies",
-      value: mockCookies.length,
+      value: cookies.length,
       icon: <Cookie className="w-5 h-5" />,
       color: "text-chart-4",
     },
     {
       label: "Files Verified",
-      value: `${mockVerification.verifiedFiles}/${mockVerification.totalFiles}`,
+      value: verification ? `${verification.verifiedFiles}/${verification.totalFiles}` : "N/A",
       icon: <FileCheck className="w-5 h-5" />,
       color: "text-success",
     },
   ];
+
+  const allFilesVerified = verification?.allFilesVerified ?? false;
 
   return (
     <div className="space-y-6">
@@ -73,23 +95,24 @@ export const Dashboard = () => {
       </div>
 
       {/* Status Banner */}
-      <Card className={`border-2 ${mockVerification.allFilesVerified ? "border-success bg-success/5" : "border-destructive bg-destructive/5"}`}>
+      <Card className={`border-2 ${allFilesVerified ? "border-success bg-success/5" : "border-destructive bg-destructive/5"}`}>
         <CardContent className="py-4">
           <div className="flex items-center gap-4">
-            {mockVerification.allFilesVerified ? (
+            {allFilesVerified ? (
               <CheckCircle2 className="w-10 h-10 text-success" />
             ) : (
               <AlertTriangle className="w-10 h-10 text-destructive" />
             )}
             <div>
               <h3 className="text-lg font-bold text-foreground">
-                {mockVerification.allFilesVerified
+                {allFilesVerified
                   ? "All Checks Passed - Evidence Integrity Verified"
                   : "Verification Failed - Evidence May Be Compromised"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Bundle hash verified • {mockVerification.verifiedFiles} files
-                verified • Chain of custody recorded
+                {verification
+                  ? `Bundle hash verified • ${verification.verifiedFiles} files verified • Chain of custody recorded`
+                  : "Verification data not available"}
               </p>
             </div>
           </div>
@@ -111,12 +134,12 @@ export const Dashboard = () => {
 
       {/* Main Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CaseInfoCard caseInfo={mockCaseInfo} />
-        <VerificationCard verification={mockVerification} />
+        {caseInfo && <CaseInfoCard caseInfo={caseInfo} />}
+        {verification && <VerificationCard verification={verification} />}
       </div>
 
       {/* Custody Chain */}
-      <CustodyChain entries={mockCustodyChain} />
+      {custodyChain.length > 0 && <CustodyChain entries={custodyChain} />}
     </div>
   );
 };
