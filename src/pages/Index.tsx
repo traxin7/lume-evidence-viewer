@@ -32,6 +32,7 @@ const Index = () => {
     fileTree,
     loading,
     error,
+    refetch,
   } = useAnalysisData();
 
   if (loading) {
@@ -71,6 +72,7 @@ const Index = () => {
             downloads={downloads}
             cookies={cookies}
             passwords={passwords}
+            onRefresh={refetch}
           />
         );
       case "profiles":
@@ -114,6 +116,7 @@ const Index = () => {
             downloads={downloads}
             cookies={cookies}
             passwords={passwords}
+            onRefresh={refetch}
           />
         );
     }
