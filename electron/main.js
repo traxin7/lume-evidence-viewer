@@ -20,7 +20,7 @@ function createWindow() {
   // In development, load from Vite dev server
   const isDev = process.env.NODE_ENV === 'development';
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:8080');
     mainWindow.webContents.openDevTools();
   } else {
     // In production, load the built files
