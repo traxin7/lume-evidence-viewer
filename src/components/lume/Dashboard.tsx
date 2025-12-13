@@ -1,6 +1,7 @@
 import { CaseInfoCard } from "./CaseInfoCard";
 import { VerificationCard } from "./VerificationCard";
 import { CustodyChain } from "./CustodyChain";
+import { AnalyzeUploader } from "./AnalyzeUploader";
 import {
   CaseInfo,
   VerificationResult,
@@ -32,6 +33,7 @@ interface DashboardProps {
   downloads: DownloadEntry[];
   cookies: CookieEntry[];
   passwords: PasswordEntry[];
+  onRefresh?: () => void;
 }
 
 export const Dashboard = ({
@@ -43,6 +45,7 @@ export const Dashboard = ({
   downloads,
   cookies,
   passwords,
+  onRefresh,
 }: DashboardProps) => {
   const stats = [
     {
@@ -140,6 +143,9 @@ export const Dashboard = ({
 
       {/* Custody Chain */}
       {custodyChain.length > 0 && <CustodyChain entries={custodyChain} />}
+
+      {/* Analyze Uploader */}
+      <AnalyzeUploader onAnalyzeComplete={onRefresh || (() => window.location.reload())} />
     </div>
   );
 };

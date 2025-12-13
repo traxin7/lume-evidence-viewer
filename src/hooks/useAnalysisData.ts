@@ -32,6 +32,7 @@ interface AnalysisData {
 interface UseAnalysisDataResult extends AnalysisData {
   loading: boolean;
   error: string | null;
+  refetch: () => void;
 }
 
 export function useAnalysisData(): UseAnalysisDataResult {
@@ -52,21 +53,21 @@ export function useAnalysisData(): UseAnalysisDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const result = await loadAllData();
-        setData(result);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to load analysis data:", err);
-        setError("Failed to load analysis data");
-      } finally {
-        setLoading(false);
-      }
+  async function fetchData() {
+    try {
+      setLoading(true);
+      const result = await loadAllData();
+      setData(result);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load analysis data:", err);
+      setError("Failed to load analysis data");
+    } finally {
+      setLoading(false);
     }
+  }
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -74,5 +75,6 @@ export function useAnalysisData(): UseAnalysisDataResult {
     ...data,
     loading,
     error,
+    refetch: fetchData,
   };
 }
