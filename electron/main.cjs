@@ -17,9 +17,6 @@ function createWindow() {
     icon: path.join(__dirname, '../public/favicon.ico')
   });
 
-  // Always open DevTools for debugging
-  mainWindow.webContents.openDevTools();
-
   // In development, load from Vite dev server
   const isDev = !app.isPackaged;
   if (isDev) {
