@@ -55,6 +55,7 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
   return new Promise((resolve, reject) => {
     const exePath = path.join(app.getAppPath(), 'LumeViewer.exe');
     const outputDir = path.join(app.getAppPath(), 'public', 'analyzed');
+    const os = require('os');
     
     // Check if exe exists
     if (!fs.existsSync(exePath)) {
@@ -66,24 +67,33 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
     console.log('Hash:', hashPath);
     console.log('Bundle:', bundlePath);
     
-    // Use exec to run in a new terminal window with proper escaping
-    // Using /c so terminal closes after command completes
-    const { exec } = require('child_process');
+    // Create a temp batch file to avoid quoting issues
+    const batchContent = `@echo off
+cd /d "${app.getAppPath()}"
+"${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}"
+echo.
+echo Analysis finished. Press any key to close...
+pause >nul
+`;
+    const batchPath = path.join(os.tmpdir(), 'lume_analyze.bat');
+    fs.writeFileSync(batchPath, batchContent);
     
-    const cmdArgs = `start "LumeViewer" /wait cmd /c ""${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}""`;
-    
-    console.log('Command:', cmdArgs);
+    console.log('Batch file:', batchPath);
+    console.log('Batch content:', batchContent);
     
     // Watch for the analyzed folder to appear/update
     let watcher = null;
+    let resolved = false;
     const watchTimeout = setTimeout(() => {
       if (watcher) watcher.close();
     }, 300000); // 5 min timeout
     
     // Start watching for completion
     const checkCompletion = () => {
+      if (resolved) return;
       const manifestPath = path.join(outputDir, 'MANIFEST.json');
       if (fs.existsSync(manifestPath)) {
+        resolved = true;
         clearTimeout(watchTimeout);
         if (watcher) watcher.close();
         // Notify renderer that analysis is complete
@@ -106,16 +116,26 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
       console.log('Watch error:', e);
     }
     
-    exec(cmdArgs, { cwd: app.getAppPath() }, (error) => {
-      if (error) {
-        console.error('Exec error:', error);
-        clearTimeout(watchTimeout);
-        if (watcher) watcher.close();
-        reject(error);
-        return;
-      }
-      // Command finished, check for output
+    // Use spawn to run the batch file in a new visible terminal
+    const terminal = spawn('cmd.exe', ['/c', 'start', '/wait', 'LumeViewer', 'cmd.exe', '/c', batchPath], {
+      cwd: app.getAppPath(),
+      detached: true,
+      stdio: 'ignore'
+    });
+    
+    terminal.on('close', (code) => {
+      console.log('Terminal closed with code:', code);
+      // Clean up batch file
+      try { fs.unlinkSync(batchPath); } catch (e) {}
+      // Check for completion after terminal closes
       setTimeout(checkCompletion, 500);
+    });
+    
+    terminal.on('error', (error) => {
+      console.error('Spawn error:', error);
+      clearTimeout(watchTimeout);
+      if (watcher) watcher.close();
+      reject(error);
     });
   });
 });
