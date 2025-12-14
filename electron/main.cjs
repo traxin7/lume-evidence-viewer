@@ -50,7 +50,7 @@ app.on('activate', () => {
   }
 });
 
-// Handle analyze request from renderer
+// Handle analyze request from renderer - opens in a visible terminal for password input
 ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
   return new Promise((resolve, reject) => {
     const exePath = path.join(app.getAppPath(), 'LumeViewer.exe');
@@ -61,38 +61,28 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
       return;
     }
 
-    const args = ['analyze', '--hash', hashPath, '--bundle', bundlePath];
+    const command = `"${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}"`;
     
-    console.log('Running:', exePath, args.join(' '));
+    console.log('Running in terminal:', command);
     
-    const process = spawn(exePath, args, {
-      cwd: app.getAppPath()
+    // Spawn in a visible cmd window so user can input password
+    const process = spawn('cmd.exe', ['/c', `start /wait cmd.exe /k ${command}`], {
+      cwd: app.getAppPath(),
+      shell: true,
+      detached: true
     });
 
-    let stdout = '';
-    let stderr = '';
-
-    process.stdout.on('data', (data) => {
-      stdout += data.toString();
-      // Send progress to renderer
-      mainWindow.webContents.send('analyze-progress', data.toString());
-    });
-
-    process.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    process.on('close', (code) => {
-      if (code === 0) {
-        resolve({ success: true, output: stdout });
-      } else {
-        reject(new Error(stderr || `Process exited with code ${code}`));
-      }
-    });
-
+    // Since we're opening a separate terminal, we can't capture output directly
+    // The terminal will stay open for user interaction
     process.on('error', (err) => {
       reject(err);
     });
+
+    // Resolve immediately since the terminal is interactive
+    // User will see the output in the terminal window
+    setTimeout(() => {
+      resolve({ success: true, output: 'Analysis started in terminal window. Please enter the password in the command prompt.' });
+    }, 1000);
   });
 });
 
