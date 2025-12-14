@@ -421,24 +421,36 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
     }
   }
 
-  // Load firefox passwords
-  const firefoxPasswords = await fetchJson<Record<string, Array<{
-    url: string;
-    user: string;
-    password: string;
-  }>>>("/results/firefox/firefox_passwords.json");
+  // Load firefox passwords - can be flat array or object with profile keys
+  const firefoxPasswordsData = await fetchJson<
+    Array<{ url: string; user: string; password: string }> |
+    Record<string, Array<{ url: string; user: string; password: string }>>
+  >("/results/firefox/firefox_passwords.json");
 
-  if (firefoxPasswords) {
-    for (const [profileName, profile] of Object.entries(firefoxPasswords)) {
-      if (Array.isArray(profile)) {
-        for (const entry of profile) {
-          entries.push({
-            url: entry.url,
-            username: entry.user,
-            password: entry.password,
-            browser: "Firefox",
-            profile: profileName,
-          });
+  if (firefoxPasswordsData) {
+    // Check if it's a flat array (single profile) or object with profile keys
+    if (Array.isArray(firefoxPasswordsData)) {
+      for (const entry of firefoxPasswordsData) {
+        entries.push({
+          url: entry.url,
+          username: entry.user,
+          password: entry.password,
+          browser: "Firefox",
+          profile: "Default",
+        });
+      }
+    } else {
+      for (const [profileName, profile] of Object.entries(firefoxPasswordsData)) {
+        if (Array.isArray(profile)) {
+          for (const entry of profile) {
+            entries.push({
+              url: entry.url,
+              username: entry.user,
+              password: entry.password,
+              browser: "Firefox",
+              profile: profileName,
+            });
+          }
         }
       }
     }
