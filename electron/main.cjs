@@ -61,28 +61,30 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
       return;
     }
 
-    const command = `"${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}"`;
+    console.log('Running:', exePath);
+    console.log('Hash:', hashPath);
+    console.log('Bundle:', bundlePath);
     
-    console.log('Running in terminal:', command);
+    // Use exec to run in a new terminal window with proper escaping
+    const { exec } = require('child_process');
     
-    // Spawn in a visible cmd window so user can input password
-    const process = spawn('cmd.exe', ['/c', `start /wait cmd.exe /k ${command}`], {
-      cwd: app.getAppPath(),
-      shell: true,
-      detached: true
-    });
-
-    // Since we're opening a separate terminal, we can't capture output directly
-    // The terminal will stay open for user interaction
-    process.on('error', (err) => {
-      reject(err);
+    // Create a batch command that opens a new cmd window
+    const cmdArgs = `start "LumeViewer" cmd /k ""${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}""`;
+    
+    console.log('Command:', cmdArgs);
+    
+    exec(cmdArgs, { cwd: app.getAppPath() }, (error) => {
+      if (error) {
+        console.error('Exec error:', error);
+        reject(error);
+        return;
+      }
     });
 
     // Resolve immediately since the terminal is interactive
-    // User will see the output in the terminal window
     setTimeout(() => {
       resolve({ success: true, output: 'Analysis started in terminal window. Please enter the password in the command prompt.' });
-    }, 1000);
+    }, 500);
   });
 });
 
