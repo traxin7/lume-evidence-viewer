@@ -63,6 +63,16 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
       return;
     }
 
+    // Clean up existing analyzed directory to avoid permission issues
+    try {
+      if (fs.existsSync(outputDir)) {
+        fs.rmSync(outputDir, { recursive: true, force: true });
+        console.log('Cleaned up existing analyzed directory');
+      }
+    } catch (e) {
+      console.log('Cleanup warning:', e.message);
+    }
+
     console.log('Running:', exePath);
     console.log('Hash:', hashPath);
     console.log('Bundle:', bundlePath);
