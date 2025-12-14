@@ -11,5 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('analyze-progress', (event, data) => callback(data));
   },
   
+  onAnalysisComplete: (callback) => {
+    ipcRenderer.on('analysis-complete', () => callback());
+  },
+  
   isElectron: true
 });

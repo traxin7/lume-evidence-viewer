@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, FileArchive, FileKey, Play, Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -98,12 +98,26 @@ export function AnalyzeUploader({ onAnalyzeComplete }: AnalyzeUploaderProps) {
 
   const canAnalyze = bundlePath && hashPath && !isAnalyzing;
 
+  // Listen for analysis completion from Electron
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.onAnalysisComplete(() => {
+        setIsAnalyzing(false);
+        toast({
+          title: "Analysis Complete",
+          description: "Evidence bundle has been analyzed successfully.",
+        });
+        onAnalyzeComplete();
+      });
+    }
+  }, [onAnalyzeComplete, toast]);
+
   const handleAnalyze = async () => {
     if (!bundlePath || !hashPath || !window.electronAPI) return;
 
     setIsAnalyzing(true);
     setError(null);
-    setProgress([]);
+    setProgress(['Analysis started. Please enter the password in the terminal window...']);
 
     // Listen for progress updates
     window.electronAPI.onAnalyzeProgress((data: string) => {
@@ -111,24 +125,15 @@ export function AnalyzeUploader({ onAnalyzeComplete }: AnalyzeUploaderProps) {
     });
 
     try {
-      const result = await window.electronAPI.analyzeBundle(bundlePath, hashPath);
-      
-      toast({
-        title: "Analysis Complete",
-        description: "Evidence bundle has been analyzed successfully.",
-      });
-      
-      // Trigger reload of data
-      onAnalyzeComplete();
+      await window.electronAPI.analyzeBundle(bundlePath, hashPath);
     } catch (err: any) {
       setError(err.message);
+      setIsAnalyzing(false);
       toast({
         title: "Analysis Failed",
         description: err.message,
         variant: "destructive",
       });
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 

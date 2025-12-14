@@ -54,6 +54,7 @@ app.on('activate', () => {
 ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
   return new Promise((resolve, reject) => {
     const exePath = path.join(app.getAppPath(), 'LumeViewer.exe');
+    const outputDir = path.join(app.getAppPath(), 'public', 'analyzed');
     
     // Check if exe exists
     if (!fs.existsSync(exePath)) {
@@ -66,25 +67,56 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
     console.log('Bundle:', bundlePath);
     
     // Use exec to run in a new terminal window with proper escaping
+    // Using /c so terminal closes after command completes
     const { exec } = require('child_process');
     
-    // Create a batch command that opens a new cmd window
-    const cmdArgs = `start "LumeViewer" cmd /k ""${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}""`;
+    const cmdArgs = `start "LumeViewer" /wait cmd /c ""${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}""`;
     
     console.log('Command:', cmdArgs);
+    
+    // Watch for the analyzed folder to appear/update
+    let watcher = null;
+    const watchTimeout = setTimeout(() => {
+      if (watcher) watcher.close();
+    }, 300000); // 5 min timeout
+    
+    // Start watching for completion
+    const checkCompletion = () => {
+      const manifestPath = path.join(outputDir, 'MANIFEST.json');
+      if (fs.existsSync(manifestPath)) {
+        clearTimeout(watchTimeout);
+        if (watcher) watcher.close();
+        // Notify renderer that analysis is complete
+        mainWindow.webContents.send('analysis-complete');
+        resolve({ success: true, output: 'Analysis complete!' });
+      }
+    };
+    
+    // Create output dir watcher
+    try {
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      watcher = fs.watch(outputDir, (eventType, filename) => {
+        if (filename === 'MANIFEST.json') {
+          setTimeout(checkCompletion, 1000); // Wait a bit for file to be fully written
+        }
+      });
+    } catch (e) {
+      console.log('Watch error:', e);
+    }
     
     exec(cmdArgs, { cwd: app.getAppPath() }, (error) => {
       if (error) {
         console.error('Exec error:', error);
+        clearTimeout(watchTimeout);
+        if (watcher) watcher.close();
         reject(error);
         return;
       }
+      // Command finished, check for output
+      setTimeout(checkCompletion, 500);
     });
-
-    // Resolve immediately since the terminal is interactive
-    setTimeout(() => {
-      resolve({ success: true, output: 'Analysis started in terminal window. Please enter the password in the command prompt.' });
-    }, 500);
   });
 });
 
