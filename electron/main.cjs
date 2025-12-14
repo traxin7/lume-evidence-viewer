@@ -53,8 +53,11 @@ app.on('activate', () => {
 // Handle analyze request from renderer - opens in a visible terminal for password input
 ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
   return new Promise((resolve, reject) => {
-    const exePath = path.join(app.getAppPath(), 'LumeViewer.exe');
-    const outputDir = path.join(app.getAppPath(), 'public', 'analyzed');
+    const appPath = app.getAppPath();
+    // In dev, appPath is the electron folder; go up one level to project root
+    const projectRoot = path.dirname(appPath);
+    const exePath = path.join(projectRoot, 'LumeViewer.exe');
+    const outputDir = path.join(projectRoot, 'public', 'analyzed');
     const os = require('os');
     
     // Check if exe exists
@@ -79,7 +82,7 @@ ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
     
     // Create a temp batch file to avoid quoting issues
     const batchContent = `@echo off
-cd /d "${app.getAppPath()}"
+cd /d "${projectRoot}"
 "${exePath}" analyze --hash "${hashPath}" --bundle "${bundlePath}"
 echo.
 echo Analysis finished. Press any key to close...
@@ -88,8 +91,8 @@ pause >nul
     const batchPath = path.join(os.tmpdir(), 'lume_analyze.bat');
     fs.writeFileSync(batchPath, batchContent);
     
+    console.log('Project root:', projectRoot);
     console.log('Batch file:', batchPath);
-    console.log('Batch content:', batchContent);
     
     // Watch for the analyzed folder to appear/update
     let watcher = null;
@@ -129,7 +132,7 @@ pause >nul
     // Use exec to run the batch file in a new visible terminal
     const { exec } = require('child_process');
     
-    exec(`start "" /wait "${batchPath}"`, { cwd: app.getAppPath() }, (error, stdout, stderr) => {
+    exec(`start "" /wait "${batchPath}"`, { cwd: projectRoot }, (error, stdout, stderr) => {
       console.log('Terminal closed');
       console.log('stdout:', stdout);
       console.log('stderr:', stderr);
