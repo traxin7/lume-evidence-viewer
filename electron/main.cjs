@@ -116,26 +116,24 @@ pause >nul
       console.log('Watch error:', e);
     }
     
-    // Use spawn to run the batch file in a new visible terminal
-    const terminal = spawn('cmd.exe', ['/c', 'start', '/wait', 'LumeViewer', 'cmd.exe', '/c', batchPath], {
-      cwd: app.getAppPath(),
-      detached: true,
-      stdio: 'ignore'
-    });
+    // Use exec to run the batch file in a new visible terminal
+    const { exec } = require('child_process');
     
-    terminal.on('close', (code) => {
-      console.log('Terminal closed with code:', code);
+    exec(`start "" /wait "${batchPath}"`, { cwd: app.getAppPath() }, (error, stdout, stderr) => {
+      console.log('Terminal closed');
+      console.log('stdout:', stdout);
+      console.log('stderr:', stderr);
+      
       // Clean up batch file
       try { fs.unlinkSync(batchPath); } catch (e) {}
+      
+      if (error) {
+        console.error('Exec error:', error);
+        // Don't reject - check if output was still created
+      }
+      
       // Check for completion after terminal closes
       setTimeout(checkCompletion, 500);
-    });
-    
-    terminal.on('error', (error) => {
-      console.error('Spawn error:', error);
-      clearTimeout(watchTimeout);
-      if (watcher) watcher.close();
-      reject(error);
     });
   });
 });
