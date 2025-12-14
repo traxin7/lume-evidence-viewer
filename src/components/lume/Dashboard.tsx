@@ -47,6 +47,9 @@ export const Dashboard = ({
   passwords,
   onRefresh,
 }: DashboardProps) => {
+  // Check if we have any actual data loaded
+  const hasData = caseInfo || verification || profiles.length > 0 || history.length > 0;
+
   const stats = [
     {
       label: "Browser Profiles",
@@ -87,6 +90,33 @@ export const Dashboard = ({
   ];
 
   const allFilesVerified = verification?.allFilesVerified ?? false;
+
+  // Show only uploader when no data is loaded
+  if (!hasData) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
+          <p className="text-muted-foreground mt-1">
+            Upload an evidence bundle to begin analysis
+          </p>
+        </div>
+
+        <Card className="border-2 border-dashed border-muted-foreground/30">
+          <CardContent className="py-12 text-center">
+            <FileCheck className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Evidence Bundle Loaded</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Drop an encrypted evidence bundle and hash file below to analyze browser data, 
+              verify integrity, and view chain of custody information.
+            </p>
+          </CardContent>
+        </Card>
+
+        <AnalyzeUploader onAnalyzeComplete={onRefresh || (() => window.location.reload())} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
