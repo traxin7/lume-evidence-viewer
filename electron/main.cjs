@@ -17,15 +17,26 @@ function createWindow() {
     icon: path.join(__dirname, '../public/favicon.ico')
   });
 
+  // Always open DevTools for debugging
+  mainWindow.webContents.openDevTools();
+
   // In development, load from Vite dev server
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = !app.isPackaged;
   if (isDev) {
     mainWindow.loadURL('http://localhost:8080');
-    mainWindow.webContents.openDevTools();
   } else {
     // In production, load the built files
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  // Debug: log when page loads or fails
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('Page loaded successfully');
+  });
 }
 
 app.whenReady().then(createWindow);
