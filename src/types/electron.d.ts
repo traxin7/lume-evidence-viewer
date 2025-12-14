@@ -2,6 +2,7 @@ export interface ElectronAPI {
   analyzeBundle: (bundlePath: string, hashPath: string) => Promise<{ success: boolean; output: string }>;
   selectFile: (filters: { name: string; extensions: string[] }[], title: string) => Promise<string | null>;
   onAnalyzeProgress: (callback: (data: string) => void) => void;
+  onAnalysisComplete: (callback: () => void) => void;
   isElectron: boolean;
 }
 
