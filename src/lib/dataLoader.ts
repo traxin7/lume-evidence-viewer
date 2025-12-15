@@ -301,17 +301,28 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
   return entries;
 }
 
-// Load cookies from all browser profiles
+// Load cookies from all browser profiles - dynamically discover profiles
 export async function loadCookies(): Promise<CookieEntry[]> {
   const entries: CookieEntry[] = [];
 
-  // Define chromium cookie paths with browser/profile info
-  const chromiumPathsInfo = [
-    { path: "/results/chromium/chrome/Default/cookies.json", browser: "Chrome", profile: "Default" },
-    { path: "/results/chromium/chrome/Profile 1/cookies.json", browser: "Chrome", profile: "Profile 1" },
-    { path: "/results/chromium/chrome/Profile 2/cookies.json", browser: "Chrome", profile: "Profile 2" },
-    { path: "/results/chromium/edge/Default/cookies.json", browser: "Edge", profile: "Default" },
-  ];
+  // First load chromium profiles to dynamically build paths
+  const chromiumProfiles = await fetchJson<Array<{
+    browser: string;
+    profile_dir: string;
+  }>>("/results/chromium/chromium_profiles.json");
+
+  // Build dynamic paths from profiles
+  const chromiumPathsInfo: Array<{ path: string; browser: string; profile: string }> = [];
+  if (chromiumProfiles) {
+    for (const p of chromiumProfiles) {
+      const browserFolder = p.browser.toLowerCase();
+      chromiumPathsInfo.push({
+        path: `/results/chromium/${browserFolder}/${p.profile_dir}/cookies.json`,
+        browser: p.browser,
+        profile: p.profile_dir,
+      });
+    }
+  }
 
   const firefoxCookies = await fetchJson<Record<string, Array<{
     host: string;
@@ -387,19 +398,28 @@ export async function loadCookies(): Promise<CookieEntry[]> {
   return entries;
 }
 
-// Load passwords from all browser profiles
+// Load passwords from all browser profiles - dynamically discover profiles
 export async function loadPasswords(): Promise<PasswordEntry[]> {
   const entries: PasswordEntry[] = [];
 
-  // Define chromium password paths with browser/profile info
-  const chromiumPathsInfo = [
-    { path: "/results/chromium/chrome/Default/passwords.json", browser: "Chrome", profile: "Default" },
-    { path: "/results/chromium/chrome/Profile 1/passwords.json", browser: "Chrome", profile: "Profile 1" },
-    { path: "/results/chromium/chrome/Profile 2/passwords.json", browser: "Chrome", profile: "Profile 2" },
-    { path: "/results/chromium/chrome/Profile 4/passwords.json", browser: "Chrome", profile: "Profile 4" },
-    { path: "/results/chromium/chrome/Profile 5/passwords.json", browser: "Chrome", profile: "Profile 5" },
-    { path: "/results/chromium/edge/Default/passwords.json", browser: "Edge", profile: "Default" },
-  ];
+  // First load chromium profiles to dynamically build paths
+  const chromiumProfiles = await fetchJson<Array<{
+    browser: string;
+    profile_dir: string;
+  }>>("/results/chromium/chromium_profiles.json");
+
+  // Build dynamic paths from profiles
+  const chromiumPathsInfo: Array<{ path: string; browser: string; profile: string }> = [];
+  if (chromiumProfiles) {
+    for (const p of chromiumProfiles) {
+      const browserFolder = p.browser.toLowerCase();
+      chromiumPathsInfo.push({
+        path: `/results/chromium/${browserFolder}/${p.profile_dir}/passwords.json`,
+        browser: p.browser,
+        profile: p.profile_dir,
+      });
+    }
+  }
 
   for (const pathInfo of chromiumPathsInfo) {
     const data = await fetchJson<Array<{
@@ -428,7 +448,6 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
   >("/results/firefox/firefox_passwords.json");
 
   // If firefox_passwords.json is a flat array, infer the profile name from other Firefox files
-  // so the Passwords tab profile filter (Firefox|<profile>) matches.
   const firefoxProfilesHint = await fetchJson<Record<string, unknown>>(
     "/results/firefox/firefox_autofill.json"
   );
@@ -465,7 +484,6 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
       }
     }
   }
-
 
   return entries;
 }
