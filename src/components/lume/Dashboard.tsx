@@ -5,7 +5,7 @@ import { AnalyzeUploader } from "./AnalyzeUploader";
 import {
   CaseInfo,
   VerificationResult,
-  CustodyEntry,
+  CustodyReport,
   BrowserProfile,
   HistoryEntry,
   DownloadEntry,
@@ -27,7 +27,7 @@ import {
 interface DashboardProps {
   caseInfo: CaseInfo | null;
   verification: VerificationResult | null;
-  custodyChain: CustodyEntry[];
+  custodyReport: CustodyReport | null;
   profiles: BrowserProfile[];
   history: HistoryEntry[];
   downloads: DownloadEntry[];
@@ -39,7 +39,7 @@ interface DashboardProps {
 export const Dashboard = ({
   caseInfo,
   verification,
-  custodyChain,
+  custodyReport,
   profiles,
   history,
   downloads,
@@ -172,7 +172,7 @@ export const Dashboard = ({
       </div>
 
       {/* Custody Chain */}
-      {custodyChain.length > 0 && <CustodyChain entries={custodyChain} />}
+      {custodyReport && <CustodyChain report={custodyReport} />}
 
       {/* Analyze Uploader */}
       <AnalyzeUploader onAnalyzeComplete={onRefresh || (() => window.location.reload())} />

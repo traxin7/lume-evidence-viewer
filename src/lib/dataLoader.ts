@@ -3,7 +3,7 @@
 import {
   CaseInfo,
   VerificationResult,
-  CustodyEntry,
+  CustodyReport,
   BrowserProfile,
   HistoryEntry,
   BookmarkEntry,
@@ -75,48 +75,56 @@ export async function loadVerification(): Promise<VerificationResult | null> {
   };
 }
 
-// Load custody chain - since MANIFEST.json doesn't have custody_chain, we generate from verification
-export async function loadCustodyChain(): Promise<CustodyEntry[]> {
-  const [manifest, verification] = await Promise.all([
-    fetchJson<{
-      case_name: string;
-      investigator: string;
-      created_utc: string;
-    }>("/MANIFEST.json"),
-    fetchJson<{
-      verification_timestamp: string;
-      all_files_verified: boolean;
-      verified_files: number;
-    }>("/VERIFICATION_REPORT.json"),
-  ]);
+// Load custody report from CUSTODY_REPORT.json
+export async function loadCustodyReport(): Promise<CustodyReport | null> {
+  const report = await fetchJson<{
+    report_generated: string;
+    case_id: string;
+    case_name: string;
+    original_investigator: string;
+    bundle_created: string;
+    custody_started: string;
+    total_entries: number;
+    verified: boolean;
+    chain_status: string;
+    issues: string[];
+    entries: Array<{
+      entry_number: number;
+      action: string;
+      timestamp: string;
+      analyst: {
+        name: string;
+        badge_id: string;
+        agency: string;
+        purpose: string;
+      };
+      system: {
+        username: string;
+        computer_name: string;
+        ip_address: string;
+        os: string;
+      };
+      verification: {
+        bundle_hash_match: boolean;
+        files_verified: number;
+        files_failed: number;
+        output_directory: string;
+      };
+    }>;
+  }>("/CUSTODY_REPORT.json");
 
-  const entries: CustodyEntry[] = [];
+  if (!report) return null;
 
-  if (manifest) {
-    entries.push({
-      id: 1,
-      action: "BUNDLE_CREATED",
-      timestamp: manifest.created_utc,
-      user: manifest.investigator,
-      details: "Evidence bundle created and encrypted",
-      hashValid: true,
-    });
-  }
+  // Mark entries with hash validity based on issues
+  const entriesWithValidity = report.entries.map((entry, index) => ({
+    ...entry,
+    hashValid: !report.issues.some(issue => issue.includes(`Entry #${entry.entry_number}`)),
+  }));
 
-  if (verification) {
-    entries.push({
-      id: 2,
-      action: "VERIFICATION_COMPLETE",
-      timestamp: verification.verification_timestamp,
-      user: manifest?.investigator || "System",
-      details: verification.all_files_verified
-        ? `All ${verification.verified_files} files verified successfully`
-        : "Verification completed with errors",
-      hashValid: verification.all_files_verified,
-    });
-  }
-
-  return entries;
+  return {
+    ...report,
+    entries: entriesWithValidity,
+  };
 }
 
 function getActionDetails(action: string, hashValid: boolean): string {
@@ -769,7 +777,7 @@ export async function loadAllData() {
   const [
     caseInfo,
     verification,
-    custodyChain,
+    custodyReport,
     profiles,
     history,
     downloads,
@@ -782,7 +790,7 @@ export async function loadAllData() {
   ] = await Promise.all([
     loadCaseInfo(),
     loadVerification(),
-    loadCustodyChain(),
+    loadCustodyReport(),
     loadProfiles(),
     loadHistory(),
     loadDownloads(),
@@ -797,7 +805,7 @@ export async function loadAllData() {
   return {
     caseInfo,
     verification,
-    custodyChain,
+    custodyReport,
     profiles,
     history,
     downloads,
