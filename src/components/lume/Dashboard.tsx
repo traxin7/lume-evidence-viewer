@@ -1,11 +1,9 @@
 import { CaseInfoCard } from "./CaseInfoCard";
 import { VerificationCard } from "./VerificationCard";
-import { CustodyChain } from "./CustodyChain";
 import { AnalyzeUploader } from "./AnalyzeUploader";
 import {
   CaseInfo,
   VerificationResult,
-  CustodyReport,
   BrowserProfile,
   HistoryEntry,
   DownloadEntry,
@@ -27,7 +25,6 @@ import {
 interface DashboardProps {
   caseInfo: CaseInfo | null;
   verification: VerificationResult | null;
-  custodyReport: CustodyReport | null;
   profiles: BrowserProfile[];
   history: HistoryEntry[];
   downloads: DownloadEntry[];
@@ -39,7 +36,6 @@ interface DashboardProps {
 export const Dashboard = ({
   caseInfo,
   verification,
-  custodyReport,
   profiles,
   history,
   downloads,
@@ -171,8 +167,6 @@ export const Dashboard = ({
         {verification && <VerificationCard verification={verification} />}
       </div>
 
-      {/* Custody Chain */}
-      {custodyReport && <CustodyChain report={custodyReport} />}
 
       {/* Analyze Uploader */}
       <AnalyzeUploader onAnalyzeComplete={onRefresh || (() => window.location.reload())} />
