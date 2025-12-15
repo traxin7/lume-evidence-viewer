@@ -20,7 +20,7 @@ const Index = () => {
   const {
     caseInfo,
     verification,
-    custodyChain,
+    custodyReport,
     profiles,
     history,
     downloads,
@@ -66,7 +66,7 @@ const Index = () => {
           <Dashboard
             caseInfo={caseInfo}
             verification={verification}
-            custodyChain={custodyChain}
+            custodyReport={custodyReport}
             profiles={profiles}
             history={history}
             downloads={downloads}
@@ -102,7 +102,7 @@ const Index = () => {
                 Complete audit trail of evidence access and modifications
               </p>
             </div>
-            <CustodyChain entries={custodyChain} />
+            <CustodyChain report={custodyReport} />
           </div>
         );
       default:
@@ -110,7 +110,7 @@ const Index = () => {
           <Dashboard
             caseInfo={caseInfo}
             verification={verification}
-            custodyChain={custodyChain}
+            custodyReport={custodyReport}
             profiles={profiles}
             history={history}
             downloads={downloads}

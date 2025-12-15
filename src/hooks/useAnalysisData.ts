@@ -3,7 +3,7 @@ import { loadAllData } from "@/lib/dataLoader";
 import {
   CaseInfo,
   VerificationResult,
-  CustodyEntry,
+  CustodyReport,
   BrowserProfile,
   HistoryEntry,
   BookmarkEntry,
@@ -17,7 +17,7 @@ import {
 interface AnalysisData {
   caseInfo: CaseInfo | null;
   verification: VerificationResult | null;
-  custodyChain: CustodyEntry[];
+  custodyReport: CustodyReport | null;
   profiles: BrowserProfile[];
   history: HistoryEntry[];
   downloads: DownloadEntry[];
@@ -39,7 +39,7 @@ export function useAnalysisData(): UseAnalysisDataResult {
   const [data, setData] = useState<AnalysisData>({
     caseInfo: null,
     verification: null,
-    custodyChain: [],
+    custodyReport: null,
     profiles: [],
     history: [],
     downloads: [],

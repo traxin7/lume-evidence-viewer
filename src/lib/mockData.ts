@@ -19,13 +19,49 @@ export interface VerificationResult {
   verifiedFiles: number;
 }
 
+export interface CustodyAnalyst {
+  name: string;
+  badge_id: string;
+  agency: string;
+  purpose: string;
+}
+
+export interface CustodySystem {
+  username: string;
+  computer_name: string;
+  ip_address: string;
+  os: string;
+}
+
+export interface CustodyVerification {
+  bundle_hash_match: boolean;
+  files_verified: number;
+  files_failed: number;
+  output_directory: string;
+}
+
 export interface CustodyEntry {
-  id: number;
+  entry_number: number;
   action: string;
   timestamp: string;
-  user: string;
-  details: string;
-  hashValid: boolean;
+  analyst: CustodyAnalyst;
+  system: CustodySystem;
+  verification: CustodyVerification;
+  hashValid?: boolean; // computed from chain status
+}
+
+export interface CustodyReport {
+  report_generated: string;
+  case_id: string;
+  case_name: string;
+  original_investigator: string;
+  bundle_created: string;
+  custody_started: string;
+  total_entries: number;
+  verified: boolean;
+  chain_status: string;
+  issues: string[];
+  entries: CustodyEntry[];
 }
 
 export interface BrowserProfile {
