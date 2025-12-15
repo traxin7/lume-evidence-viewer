@@ -427,6 +427,16 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
     Record<string, Array<{ url: string; user: string; password: string }>>
   >("/results/firefox/firefox_passwords.json");
 
+  // If firefox_passwords.json is a flat array, infer the profile name from other Firefox files
+  // so the Passwords tab profile filter (Firefox|<profile>) matches.
+  const firefoxProfilesHint = await fetchJson<Record<string, unknown>>(
+    "/results/firefox/firefox_autofill.json"
+  );
+  const inferredFirefoxProfile =
+    firefoxProfilesHint && Object.keys(firefoxProfilesHint).length > 0
+      ? Object.keys(firefoxProfilesHint)[0]
+      : "Default";
+
   if (firefoxPasswordsData) {
     // Check if it's a flat array (single profile) or object with profile keys
     if (Array.isArray(firefoxPasswordsData)) {
@@ -436,7 +446,7 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
           username: entry.user,
           password: entry.password,
           browser: "Firefox",
-          profile: "Default",
+          profile: inferredFirefoxProfile,
         });
       }
     } else {
@@ -455,6 +465,7 @@ export async function loadPasswords(): Promise<PasswordEntry[]> {
       }
     }
   }
+
 
   return entries;
 }

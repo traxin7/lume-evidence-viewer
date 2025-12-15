@@ -5,6 +5,24 @@ const fs = require('fs');
 
 let mainWindow;
 
+function getProjectRoot() {
+  const appPath = app.getAppPath();
+  // In dev, appPath is the electron folder; go up one level to project root
+  return app.isPackaged ? appPath : path.dirname(appPath);
+}
+
+function cleanupAnalyzedOnLaunch() {
+  const outputDir = path.join(getProjectRoot(), 'public', 'analyzed');
+  try {
+    if (fs.existsSync(outputDir)) {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+      console.log('Cleaned analyzed directory on launch');
+    }
+  } catch (e) {
+    console.log('Launch cleanup warning:', e.message);
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -36,7 +54,10 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  cleanupAnalyzedOnLaunch();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -53,13 +74,11 @@ app.on('activate', () => {
 // Handle analyze request from renderer - opens in a visible terminal for password input
 ipcMain.handle('analyze-bundle', async (event, { bundlePath, hashPath }) => {
   return new Promise((resolve, reject) => {
-    const appPath = app.getAppPath();
-    // In dev, appPath is the electron folder; go up one level to project root
-    const projectRoot = path.dirname(appPath);
+    const projectRoot = getProjectRoot();
     const exePath = path.join(projectRoot, 'LumeViewer.exe');
     const outputDir = path.join(projectRoot, 'public', 'analyzed');
     const os = require('os');
-    
+
     // Check if exe exists
     if (!fs.existsSync(exePath)) {
       reject(new Error(`LumeViewer.exe not found at: ${exePath}`));
