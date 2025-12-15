@@ -301,26 +301,25 @@ export async function loadDownloads(): Promise<DownloadEntry[]> {
   return entries;
 }
 
-// Load cookies from all browser profiles - dynamically discover profiles
+// Load cookies from all browser profiles - dynamically discover profiles from data files
 export async function loadCookies(): Promise<CookieEntry[]> {
   const entries: CookieEntry[] = [];
 
-  // First load chromium profiles to dynamically build paths
-  const chromiumProfiles = await fetchJson<Array<{
-    browser: string;
-    profile_dir: string;
-  }>>("/results/chromium/chromium_profiles.json");
+  // Discover profiles from chromium_autofill.json which has all profiles with data
+  const chromiumAutofill = await fetchJson<Record<string, Record<string, unknown>>>("/results/chromium/chromium_autofill.json");
 
-  // Build dynamic paths from profiles
+  // Build dynamic paths from discovered profiles
   const chromiumPathsInfo: Array<{ path: string; browser: string; profile: string }> = [];
-  if (chromiumProfiles) {
-    for (const p of chromiumProfiles) {
-      const browserFolder = p.browser.toLowerCase();
-      chromiumPathsInfo.push({
-        path: `/results/chromium/${browserFolder}/${p.profile_dir}/cookies.json`,
-        browser: p.browser,
-        profile: p.profile_dir,
-      });
+  if (chromiumAutofill) {
+    for (const [browserName, profiles] of Object.entries(chromiumAutofill)) {
+      const browserFolder = browserName.toLowerCase();
+      for (const profileName of Object.keys(profiles)) {
+        chromiumPathsInfo.push({
+          path: `/results/chromium/${browserFolder}/${profileName}/cookies.json`,
+          browser: browserName,
+          profile: profileName,
+        });
+      }
     }
   }
 
@@ -398,26 +397,25 @@ export async function loadCookies(): Promise<CookieEntry[]> {
   return entries;
 }
 
-// Load passwords from all browser profiles - dynamically discover profiles
+// Load passwords from all browser profiles - dynamically discover profiles from data files
 export async function loadPasswords(): Promise<PasswordEntry[]> {
   const entries: PasswordEntry[] = [];
 
-  // First load chromium profiles to dynamically build paths
-  const chromiumProfiles = await fetchJson<Array<{
-    browser: string;
-    profile_dir: string;
-  }>>("/results/chromium/chromium_profiles.json");
+  // Discover profiles from chromium_autofill.json which has all profiles with data
+  const chromiumAutofill = await fetchJson<Record<string, Record<string, unknown>>>("/results/chromium/chromium_autofill.json");
 
-  // Build dynamic paths from profiles
+  // Build dynamic paths from discovered profiles
   const chromiumPathsInfo: Array<{ path: string; browser: string; profile: string }> = [];
-  if (chromiumProfiles) {
-    for (const p of chromiumProfiles) {
-      const browserFolder = p.browser.toLowerCase();
-      chromiumPathsInfo.push({
-        path: `/results/chromium/${browserFolder}/${p.profile_dir}/passwords.json`,
-        browser: p.browser,
-        profile: p.profile_dir,
-      });
+  if (chromiumAutofill) {
+    for (const [browserName, profiles] of Object.entries(chromiumAutofill)) {
+      const browserFolder = browserName.toLowerCase();
+      for (const profileName of Object.keys(profiles)) {
+        chromiumPathsInfo.push({
+          path: `/results/chromium/${browserFolder}/${profileName}/passwords.json`,
+          browser: browserName,
+          profile: profileName,
+        });
+      }
     }
   }
 
