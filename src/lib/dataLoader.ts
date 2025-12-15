@@ -20,6 +20,14 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${BASE_PATH}${path}`);
     if (!response.ok) return null;
+    
+    // Check content-type to avoid parsing HTML as JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      // Response is not JSON (likely HTML fallback)
+      return null;
+    }
+    
     return await response.json();
   } catch (error) {
     console.error(`Failed to fetch ${path}:`, error);
@@ -79,15 +87,20 @@ export async function loadVerification(): Promise<VerificationResult | null> {
 export async function loadCustodyReport(): Promise<CustodyReport | null> {
   try {
     const response = await fetch(`${BASE_PATH}/CUSTODY_REPORT.json`);
-    console.log("CUSTODY_REPORT.json response status:", response.status);
     
     if (!response.ok) {
       console.error("Failed to fetch CUSTODY_REPORT.json:", response.status, response.statusText);
       return null;
     }
     
+    // Check content-type to avoid parsing HTML as JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("CUSTODY_REPORT.json returned non-JSON content");
+      return null;
+    }
+    
     const report = await response.json();
-    console.log("CUSTODY_REPORT.json loaded:", report);
 
     if (!report || !report.entries) {
       console.error("Invalid custody report structure:", report);
