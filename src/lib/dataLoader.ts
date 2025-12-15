@@ -77,54 +77,37 @@ export async function loadVerification(): Promise<VerificationResult | null> {
 
 // Load custody report from CUSTODY_REPORT.json
 export async function loadCustodyReport(): Promise<CustodyReport | null> {
-  const report = await fetchJson<{
-    report_generated: string;
-    case_id: string;
-    case_name: string;
-    original_investigator: string;
-    bundle_created: string;
-    custody_started: string;
-    total_entries: number;
-    verified: boolean;
-    chain_status: string;
-    issues: string[];
-    entries: Array<{
-      entry_number: number;
-      action: string;
-      timestamp: string;
-      analyst: {
-        name: string;
-        badge_id: string;
-        agency: string;
-        purpose: string;
-      };
-      system: {
-        username: string;
-        computer_name: string;
-        ip_address: string;
-        os: string;
-      };
-      verification: {
-        bundle_hash_match: boolean;
-        files_verified: number;
-        files_failed: number;
-        output_directory: string;
-      };
-    }>;
-  }>("/CUSTODY_REPORT.json");
+  try {
+    const response = await fetch(`${BASE_PATH}/CUSTODY_REPORT.json`);
+    console.log("CUSTODY_REPORT.json response status:", response.status);
+    
+    if (!response.ok) {
+      console.error("Failed to fetch CUSTODY_REPORT.json:", response.status, response.statusText);
+      return null;
+    }
+    
+    const report = await response.json();
+    console.log("CUSTODY_REPORT.json loaded:", report);
 
-  if (!report) return null;
+    if (!report || !report.entries) {
+      console.error("Invalid custody report structure:", report);
+      return null;
+    }
 
-  // Mark entries with hash validity based on issues
-  const entriesWithValidity = report.entries.map((entry, index) => ({
-    ...entry,
-    hashValid: !report.issues.some(issue => issue.includes(`Entry #${entry.entry_number}`)),
-  }));
+    // Mark entries with hash validity based on issues
+    const entriesWithValidity = report.entries.map((entry: any) => ({
+      ...entry,
+      hashValid: !report.issues?.some((issue: string) => issue.includes(`Entry #${entry.entry_number}`)),
+    }));
 
-  return {
-    ...report,
-    entries: entriesWithValidity,
-  };
+    return {
+      ...report,
+      entries: entriesWithValidity,
+    };
+  } catch (error) {
+    console.error("Error loading CUSTODY_REPORT.json:", error);
+    return null;
+  }
 }
 
 function getActionDetails(action: string, hashValid: boolean): string {
