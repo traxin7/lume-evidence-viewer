@@ -66,7 +66,6 @@ const Index = () => {
           <Dashboard
             caseInfo={caseInfo}
             verification={verification}
-            custodyReport={custodyReport}
             profiles={profiles}
             history={history}
             downloads={downloads}
@@ -110,7 +109,6 @@ const Index = () => {
           <Dashboard
             caseInfo={caseInfo}
             verification={verification}
-            custodyReport={custodyReport}
             profiles={profiles}
             history={history}
             downloads={downloads}
