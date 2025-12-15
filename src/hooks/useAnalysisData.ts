@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { loadAllData } from "@/lib/dataLoader";
 import {
   CaseInfo,
@@ -52,18 +52,45 @@ export function useAnalysisData(): UseAnalysisDataResult {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
 
-  async function fetchData() {
+  async function fetchData(isRetry = false) {
     try {
-      setLoading(true);
+      if (!isRetry) {
+        setLoading(true);
+      }
       const result = await loadAllData();
       setData(result);
       setError(null);
+      
+      // If critical data is missing and we haven't exceeded retries, try again after a delay
+      const hasData = result.caseInfo || result.verification || result.custodyReport || 
+                      result.profiles.length > 0 || result.history.length > 0;
+      
+      if (!hasData && retryCount.current < maxRetries) {
+        retryCount.current++;
+        setTimeout(() => fetchData(true), 500);
+        return;
+      }
+      
+      retryCount.current = 0;
     } catch (err) {
       console.error("Failed to load analysis data:", err);
+      
+      // Retry on error if we haven't exceeded retries
+      if (retryCount.current < maxRetries) {
+        retryCount.current++;
+        setTimeout(() => fetchData(true), 500);
+        return;
+      }
+      
       setError("Failed to load analysis data");
+      retryCount.current = 0;
     } finally {
-      setLoading(false);
+      if (!isRetry || retryCount.current >= maxRetries) {
+        setLoading(false);
+      }
     }
   }
 
@@ -75,6 +102,9 @@ export function useAnalysisData(): UseAnalysisDataResult {
     ...data,
     loading,
     error,
-    refetch: fetchData,
+    refetch: () => {
+      retryCount.current = 0;
+      fetchData();
+    },
   };
 }
