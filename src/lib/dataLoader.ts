@@ -573,7 +573,7 @@ export async function loadExtensions(): Promise<{ browser: string; profile: stri
 // Load bookmarks
 export async function loadBookmarks(): Promise<BookmarkEntry[]> {
   const [chromiumBookmarks, firefoxBookmarks] = await Promise.all([
-    fetchJson<Record<string, Record<string, BookmarkEntry[]>>>("/results/chromium/chromium_bookmarks.json"),
+    fetchJson<Record<string, Record<string, any[]>>>("/results/chromium/chromium_bookmarks.json"),
     fetchJson<Record<string, Array<{
       title: string;
       url?: string;
@@ -584,54 +584,63 @@ export async function loadBookmarks(): Promise<BookmarkEntry[]> {
 
   const entries: BookmarkEntry[] = [];
 
-  // Process chromium bookmarks
+  // Process chromium bookmarks - set browser and profile on each top-level entry
   if (chromiumBookmarks) {
-    for (const browser of Object.values(chromiumBookmarks)) {
-      for (const profile of Object.values(browser)) {
-        if (Array.isArray(profile)) {
-          entries.push(...profile.map(convertBookmark));
+    for (const [browserName, browser] of Object.entries(chromiumBookmarks)) {
+      for (const [profileName, profileBookmarks] of Object.entries(browser)) {
+        if (Array.isArray(profileBookmarks)) {
+          for (const bm of profileBookmarks) {
+            const converted = convertBookmark(bm, browserName, profileName);
+            entries.push(converted);
+          }
         }
       }
     }
   }
 
-  // Process firefox bookmarks into a folder structure
+  // Process firefox bookmarks - each key is like "1nx8Q2hU.Profile 1"
   if (firefoxBookmarks) {
-    const firefoxFolder: BookmarkEntry = {
-      name: "Firefox Bookmarks",
-      type: "folder",
-      dateAdded: new Date().toISOString(),
-      children: [],
-    };
-
-    for (const [, bookmarks] of Object.entries(firefoxBookmarks)) {
+    for (const [profileKey, bookmarks] of Object.entries(firefoxBookmarks)) {
       if (Array.isArray(bookmarks)) {
-        for (const bm of bookmarks) {
-          firefoxFolder.children!.push({
+        // Extract display name from profile key (e.g., "1nx8Q2hU.Profile 1" -> "Profile 1")
+        const displayName = profileKey.includes(".")
+          ? profileKey.split(".").slice(1).join(".")
+          : profileKey;
+
+        // Create a folder for this Firefox profile's bookmarks
+        const profileFolder: BookmarkEntry = {
+          name: "Firefox Bookmarks",
+          type: "folder",
+          dateAdded: new Date().toISOString(),
+          browser: "Firefox",
+          profile: displayName,
+          children: bookmarks.map((bm) => ({
             name: bm.title,
             url: bm.url,
             type: bm.url ? "url" : "folder",
             dateAdded: bm.added,
-          });
-        }
-      }
-    }
+            browser: "Firefox",
+            profile: displayName,
+          })),
+        };
 
-    if (firefoxFolder.children!.length > 0) {
-      entries.push(firefoxFolder);
+        entries.push(profileFolder);
+      }
     }
   }
 
   return entries;
 }
 
-function convertBookmark(bm: any): BookmarkEntry {
+function convertBookmark(bm: any, browser: string, profile: string): BookmarkEntry {
   return {
     name: bm.name,
     url: bm.url,
     type: bm.type,
     dateAdded: bm.date_added,
-    children: bm.children ? bm.children.map(convertBookmark) : undefined,
+    browser,
+    profile,
+    children: bm.children ? bm.children.map((child: any) => convertBookmark(child, browser, profile)) : undefined,
   };
 }
 
