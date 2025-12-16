@@ -107,14 +107,18 @@ export async function loadCustodyReport(): Promise<CustodyReport | null> {
       return null;
     }
 
-    // Mark entries with hash validity based on issues
+    // Ensure issues array exists (may not be present in JSON)
+    const issues = report.issues || [];
+    
+    // Mark entries with hash validity based on issues and overall verification
     const entriesWithValidity = report.entries.map((entry: any) => ({
       ...entry,
-      hashValid: !report.issues?.some((issue: string) => issue.includes(`Entry #${entry.entry_number}`)),
+      hashValid: report.verified && !issues.some((issue: string) => issue.includes(`Entry #${entry.entry_number}`)),
     }));
 
     return {
       ...report,
+      issues,
       entries: entriesWithValidity,
     };
   } catch (error) {
