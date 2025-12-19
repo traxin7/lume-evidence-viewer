@@ -122,7 +122,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      <Header
+        history={history}
+        cookies={cookies}
+        passwords={passwords}
+        downloads={downloads}
+        bookmarks={bookmarks}
+        autofill={autofill}
+        onNavigate={setActiveTab}
+      />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
         <main className="flex-1 overflow-y-auto p-6">{renderContent()}</main>
