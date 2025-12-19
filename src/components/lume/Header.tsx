@@ -1,8 +1,36 @@
 import { Shield, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { GlobalSearch } from "./GlobalSearch";
+import { TabId } from "./Sidebar";
+import {
+  HistoryEntry,
+  CookieEntry,
+  PasswordEntry,
+  DownloadEntry,
+  BookmarkEntry,
+  AutofillEntry,
+} from "@/lib/mockData";
 
-export const Header = () => {
+interface HeaderProps {
+  history?: HistoryEntry[];
+  cookies?: CookieEntry[];
+  passwords?: PasswordEntry[];
+  downloads?: DownloadEntry[];
+  bookmarks?: BookmarkEntry[];
+  autofill?: AutofillEntry[];
+  onNavigate?: (tab: TabId) => void;
+}
+
+export const Header = ({
+  history = [],
+  cookies = [],
+  passwords = [],
+  downloads = [],
+  bookmarks = [],
+  autofill = [],
+  onNavigate,
+}: HeaderProps) => {
   const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
@@ -30,7 +58,19 @@ export const Header = () => {
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
+          {onNavigate && (
+            <GlobalSearch
+              history={history}
+              cookies={cookies}
+              passwords={passwords}
+              downloads={downloads}
+              bookmarks={bookmarks}
+              autofill={autofill}
+              onNavigate={onNavigate}
+            />
+          )}
           <span className="text-xs font-mono text-muted-foreground">
             v1.0.0
           </span>
