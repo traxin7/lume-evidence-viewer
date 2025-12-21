@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Cookie, Lock, Unlock, Clock, Globe } from "lucide-react";
 import { DataTable } from "../DataTable";
 import { CookieEntry, BrowserProfile } from "@/lib/mockData";
@@ -8,10 +8,32 @@ import { ProfileGrid } from "../ProfileGrid";
 interface CookiesTabProps {
   cookies: CookieEntry[];
   profiles: BrowserProfile[];
+  initialSearch?: string;
 }
 
-export const CookiesTab = ({ cookies, profiles }: CookiesTabProps) => {
+export const CookiesTab = ({ cookies, profiles, initialSearch = "" }: CookiesTabProps) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  // Auto-select first profile with matching data when searching
+  useEffect(() => {
+    if (initialSearch && !selectedProfile) {
+      const searchTerm = initialSearch.toLowerCase();
+      for (const profile of profiles) {
+        const profileKey = `${profile.browser}|${profile.profileDir}`;
+        const hasMatch = cookies.some(
+          (c) =>
+            (`${c.browser}|${c.profile}` === profileKey) &&
+            (c.host?.toLowerCase().includes(searchTerm) ||
+              c.name?.toLowerCase().includes(searchTerm) ||
+              c.value?.toLowerCase().includes(searchTerm))
+        );
+        if (hasMatch) {
+          setSelectedProfile(profileKey);
+          break;
+        }
+      }
+    }
+  }, [initialSearch, profiles, cookies, selectedProfile]);
 
   const filteredCookies = selectedProfile
     ? cookies.filter((c) => `${c.browser}|${c.profile}` === selectedProfile)
@@ -117,6 +139,7 @@ export const CookiesTab = ({ cookies, profiles }: CookiesTabProps) => {
             columns={columns}
             searchKeys={["host", "name", "value"] as (keyof CookieEntry)[]}
             pageSize={10}
+            initialSearch={initialSearch}
           />
         </>
       )}

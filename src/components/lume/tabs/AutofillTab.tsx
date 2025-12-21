@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FormInput, Clock, Tag } from "lucide-react";
 import { DataTable } from "../DataTable";
 import { AutofillEntry, BrowserProfile } from "@/lib/mockData";
@@ -8,10 +8,31 @@ import { ProfileGrid } from "../ProfileGrid";
 interface AutofillTabProps {
   autofill: AutofillEntry[];
   profiles: BrowserProfile[];
+  initialSearch?: string;
 }
 
-export const AutofillTab = ({ autofill, profiles }: AutofillTabProps) => {
+export const AutofillTab = ({ autofill, profiles, initialSearch = "" }: AutofillTabProps) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  // Auto-select first profile with matching data when searching
+  useEffect(() => {
+    if (initialSearch && !selectedProfile) {
+      const searchTerm = initialSearch.toLowerCase();
+      for (const profile of profiles) {
+        const profileKey = `${profile.browser}|${profile.profileDir}`;
+        const hasMatch = autofill.some(
+          (a) =>
+            (`${a.browser}|${a.profile}` === profileKey) &&
+            (a.name?.toLowerCase().includes(searchTerm) ||
+              a.value?.toLowerCase().includes(searchTerm))
+        );
+        if (hasMatch) {
+          setSelectedProfile(profileKey);
+          break;
+        }
+      }
+    }
+  }, [initialSearch, profiles, autofill, selectedProfile]);
 
   const filteredAutofill = selectedProfile
     ? autofill.filter((a) => `${a.browser}|${a.profile}` === selectedProfile)
@@ -83,6 +104,7 @@ export const AutofillTab = ({ autofill, profiles }: AutofillTabProps) => {
             columns={columns}
             searchKeys={["name", "value"] as (keyof AutofillEntry)[]}
             pageSize={15}
+            initialSearch={initialSearch}
           />
         </>
       )}
