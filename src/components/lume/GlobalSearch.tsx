@@ -245,36 +245,29 @@ export const GlobalSearch = ({
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-          <ScrollArea className="max-h-80">
-            <div className="p-1">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 overflow-hidden">
+          <ScrollArea className="h-[300px]">
+            <div className="p-1 space-y-0.5">
               {results.map((result, index) => (
                 <button
                   key={`${result.type}-${index}`}
                   onClick={() => handleSelect(result)}
                   className={cn(
-                    "w-full flex items-start gap-3 p-2.5 rounded-md text-left transition-colors",
+                    "w-full flex items-center gap-2 px-2 py-1.5 rounded text-left transition-colors",
                     selectedIndex === index
                       ? "bg-accent text-accent-foreground"
                       : "hover:bg-accent/50"
                   )}
                 >
-                  <div className="shrink-0 mt-0.5 text-muted-foreground">
+                  <div className="shrink-0 text-muted-foreground">
                     {result.icon}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
-                        {result.label}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-foreground truncate mt-1">
-                      {result.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {result.subtitle}
-                    </p>
-                  </div>
+                  <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-secondary text-secondary-foreground shrink-0">
+                    {result.label}
+                  </span>
+                  <p className="text-xs font-medium text-foreground truncate flex-1">
+                    {result.title}
+                  </p>
                 </button>
               ))}
             </div>
