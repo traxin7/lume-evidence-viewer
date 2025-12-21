@@ -17,6 +17,7 @@ import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [searchFilter, setSearchFilter] = useState("");
   const {
     caseInfo,
     verification,
@@ -34,6 +35,16 @@ const Index = () => {
     error,
     refetch,
   } = useAnalysisData();
+
+  const handleNavigate = (tab: TabId, searchTerm?: string) => {
+    setActiveTab(tab);
+    setSearchFilter(searchTerm || "");
+  };
+
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    setSearchFilter(""); // Clear search when manually changing tabs
+  };
 
   if (loading) {
     return (
@@ -77,17 +88,17 @@ const Index = () => {
       case "profiles":
         return <ProfilesTab profiles={profiles} />;
       case "history":
-        return <HistoryTab history={history} profiles={profiles} />;
+        return <HistoryTab history={history} profiles={profiles} initialSearch={searchFilter} />;
       case "bookmarks":
-        return <BookmarksTab bookmarks={bookmarks} profiles={profiles} />;
+        return <BookmarksTab bookmarks={bookmarks} profiles={profiles} initialSearch={searchFilter} />;
       case "downloads":
-        return <DownloadsTab downloads={downloads} profiles={profiles} />;
+        return <DownloadsTab downloads={downloads} profiles={profiles} initialSearch={searchFilter} />;
       case "cookies":
-        return <CookiesTab cookies={cookies} profiles={profiles} />;
+        return <CookiesTab cookies={cookies} profiles={profiles} initialSearch={searchFilter} />;
       case "passwords":
-        return <PasswordsTab passwords={passwords} profiles={profiles} />;
+        return <PasswordsTab passwords={passwords} profiles={profiles} initialSearch={searchFilter} />;
       case "autofill":
-        return <AutofillTab autofill={autofill} profiles={profiles} />;
+        return <AutofillTab autofill={autofill} profiles={profiles} initialSearch={searchFilter} />;
       case "extensions":
         return <ExtensionsTab extensions={extensions} />;
       case "files":
@@ -129,10 +140,10 @@ const Index = () => {
         downloads={downloads}
         bookmarks={bookmarks}
         autofill={autofill}
-        onNavigate={setActiveTab}
+        onNavigate={handleNavigate}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
         <main className="flex-1 overflow-y-auto p-6">{renderContent()}</main>
       </div>
     </div>

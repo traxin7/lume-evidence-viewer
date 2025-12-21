@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { History, ExternalLink, Eye } from "lucide-react";
 import { DataTable } from "../DataTable";
 import { HistoryEntry, BrowserProfile } from "@/lib/mockData";
@@ -8,10 +8,31 @@ import { ProfileGrid } from "../ProfileGrid";
 interface HistoryTabProps {
   history: HistoryEntry[];
   profiles: BrowserProfile[];
+  initialSearch?: string;
 }
 
-export const HistoryTab = ({ history, profiles }: HistoryTabProps) => {
+export const HistoryTab = ({ history, profiles, initialSearch = "" }: HistoryTabProps) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  // Auto-select first profile with matching data when searching
+  useEffect(() => {
+    if (initialSearch && !selectedProfile) {
+      const searchTerm = initialSearch.toLowerCase();
+      for (const profile of profiles) {
+        const profileKey = `${profile.browser}|${profile.profileDir}`;
+        const hasMatch = history.some(
+          (h) =>
+            (`${h.browser}|${h.profile}` === profileKey) &&
+            (h.title?.toLowerCase().includes(searchTerm) ||
+              h.url?.toLowerCase().includes(searchTerm))
+        );
+        if (hasMatch) {
+          setSelectedProfile(profileKey);
+          break;
+        }
+      }
+    }
+  }, [initialSearch, profiles, history, selectedProfile]);
 
   const filteredHistory = selectedProfile
     ? history.filter((h) => `${h.browser}|${h.profile}` === selectedProfile)
@@ -82,6 +103,7 @@ export const HistoryTab = ({ history, profiles }: HistoryTabProps) => {
             columns={columns}
             searchKeys={["title", "url"] as (keyof HistoryEntry)[]}
             pageSize={15}
+            initialSearch={initialSearch}
           />
         </>
       )}

@@ -29,7 +29,7 @@ interface GlobalSearchProps {
   downloads: DownloadEntry[];
   bookmarks: BookmarkEntry[];
   autofill: AutofillEntry[];
-  onNavigate: (tab: TabId) => void;
+  onNavigate: (tab: TabId, searchTerm?: string) => void;
 }
 
 const flattenBookmarks = (bookmarks: BookmarkEntry[]): BookmarkEntry[] => {
@@ -210,7 +210,7 @@ export const GlobalSearch = ({
   };
 
   const handleSelect = (result: SearchResult) => {
-    onNavigate(result.type);
+    onNavigate(result.type, query);
     setIsOpen(false);
     setQuery("");
   };

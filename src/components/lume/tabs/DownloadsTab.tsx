@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Download, CheckCircle, Clock, File, HardDrive } from "lucide-react";
 import { DataTable } from "../DataTable";
 import { DownloadEntry, BrowserProfile } from "@/lib/mockData";
@@ -8,6 +8,7 @@ import { ProfileGrid } from "../ProfileGrid";
 interface DownloadsTabProps {
   downloads: DownloadEntry[];
   profiles: BrowserProfile[];
+  initialSearch?: string;
 }
 
 const formatBytes = (bytes: number) => {
@@ -27,8 +28,28 @@ const getFileName = (path: string) => {
   return path.split("\\").pop() || path;
 };
 
-export const DownloadsTab = ({ downloads, profiles }: DownloadsTabProps) => {
+export const DownloadsTab = ({ downloads, profiles, initialSearch = "" }: DownloadsTabProps) => {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  // Auto-select first profile with matching data when searching
+  useEffect(() => {
+    if (initialSearch && !selectedProfile) {
+      const searchTerm = initialSearch.toLowerCase();
+      for (const profile of profiles) {
+        const profileKey = `${profile.browser}|${profile.profileDir}`;
+        const hasMatch = downloads.some(
+          (d) =>
+            (`${d.browser}|${d.profile}` === profileKey) &&
+            (d.targetPath?.toLowerCase().includes(searchTerm) ||
+              d.url?.toLowerCase().includes(searchTerm))
+        );
+        if (hasMatch) {
+          setSelectedProfile(profileKey);
+          break;
+        }
+      }
+    }
+  }, [initialSearch, profiles, downloads, selectedProfile]);
 
   const filteredDownloads = selectedProfile
     ? downloads.filter((d) => `${d.browser}|${d.profile}` === selectedProfile)
@@ -120,6 +141,7 @@ export const DownloadsTab = ({ downloads, profiles }: DownloadsTabProps) => {
             columns={columns}
             searchKeys={["targetPath", "url"] as (keyof DownloadEntry)[]}
             pageSize={10}
+            initialSearch={initialSearch}
           />
         </>
       )}

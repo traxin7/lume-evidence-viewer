@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -23,6 +23,7 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   searchKeys?: (keyof T)[];
   pageSize?: number;
+  initialSearch?: string;
 }
 
 export function DataTable<T extends object>({
@@ -30,9 +31,18 @@ export function DataTable<T extends object>({
   columns,
   searchKeys = [],
   pageSize = 10,
+  initialSearch = "",
 }: DataTableProps<T>) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [page, setPage] = useState(0);
+
+  // Update search when initialSearch changes
+  useEffect(() => {
+    if (initialSearch) {
+      setSearch(initialSearch);
+      setPage(0);
+    }
+  }, [initialSearch]);
 
   const filteredData = data.filter((item) => {
     if (!search || searchKeys.length === 0) return true;

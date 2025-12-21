@@ -19,7 +19,7 @@ interface HeaderProps {
   downloads?: DownloadEntry[];
   bookmarks?: BookmarkEntry[];
   autofill?: AutofillEntry[];
-  onNavigate?: (tab: TabId) => void;
+  onNavigate?: (tab: TabId, searchTerm?: string) => void;
 }
 
 export const Header = ({
